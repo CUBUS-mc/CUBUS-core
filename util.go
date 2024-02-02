@@ -64,3 +64,26 @@ func askForString(prompt string, defaultValue string, acceptCondition func(strin
 	}
 	return userInput
 }
+
+func askForBoolean(prompt string, defaultValue bool) bool {
+	userInput := strings.ToLower(askForString(
+		prompt,
+		"default",
+		func(input string) bool {
+			switch strings.ToLower(input) {
+			case "y", "yes", "n", "no":
+				return true
+			default:
+				return false
+			}
+		},
+	))
+	switch strings.ToLower(userInput) {
+	case "y", "yes":
+		return true
+	case "n", "no":
+		return false
+	default:
+		return defaultValue
+	}
+}

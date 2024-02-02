@@ -10,14 +10,13 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"os"
-	"strings"
 )
 
 // TODO: Load a configuration tree that shows what questions should be asked and what will follow from the answers (E.g. Cube type -> Drone -> Drone options or Cube type -> Queen -> Queen options)
 
 func loadConfig() map[string]interface{} {
 	if _, err := os.Stat("config.json"); os.IsNotExist(err) {
-		configureGUI()
+		configureCLI()
 	}
 
 	configString := readFile("config.json")
@@ -56,30 +55,9 @@ func reconfigure() {
 func configureCLI() {
 	print(banner)
 	print("                              CONFIGURATOR\n\n")
-	var config map[string]interface{}
-	config = make(map[string]interface{})
+	var config = make(map[string]interface{})
 
-	println("What type of UI do you want to use?")
-	println("c - CLI, g - GUI (default: GUI)")
-	config["ui_type"] = strings.ToLower(askForString("Type of UI: ", "g", func(input string) bool {
-		switch strings.ToLower(input) {
-		case "c", "g":
-			return true
-		default:
-			return false
-		}
-	}))
-
-	println("What type of cube do you want to setup?")
-	println("q - Queen, s - Security, d - Drone, db - Database, a - API, w - Website, b - Discord bot (default: Drone)")
-	config["cube_type"] = strings.ToLower(askForString("Type of cube: ", "d", func(input string) bool {
-		switch strings.ToLower(input) {
-		case "q", "s", "d", "db", "a", "w", "b":
-			return true
-		default:
-			return false
-		}
-	}))
+	walkTreeCLI(configDialogueTree, config, None)
 
 	configString, err := json.Marshal(config)
 	if err != nil {
@@ -87,7 +65,6 @@ func configureCLI() {
 	}
 
 	writeFile("config.json", string(configString))
-	print(banner)
 }
 
 func configureGUI() {
