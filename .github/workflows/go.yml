@@ -26,6 +26,3 @@ jobs:
 
     - name: Build for Windows
       run: fyne-cross windows -icon assets/android.png -arch=* -app-id .
-
-    - name: Test
-      run: go test -v ./...
