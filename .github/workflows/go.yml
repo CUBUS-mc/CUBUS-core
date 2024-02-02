@@ -25,4 +25,16 @@ jobs:
       run: go install fyne.io/fyne/v2/cmd/fyne@latest && go install github.com/fyne-io/fyne-cross@latest
 
     - name: Build for Windows
-      run: fyne-cross windows -icon assets/android.png -arch=* -app-id .
+      run: fyne-cross windows -icon assets/android.png -arch=* -app-id com.virusrpi.cubus
+
+    - name: Build for Linux
+      run: fyne-cross linux -icon assets/android.png -arch=* -app-id com.virusrpi.cubus
+
+    - name: Build for Android
+      run: fyne-cross android -icon assets/android.png -arch=* -app-id com.virusrpi.cubus
+
+    - name: Saving Artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: windows-artifact
+        path: ./fyne-cross/dist/*
