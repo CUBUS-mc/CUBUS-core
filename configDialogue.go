@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"strings"
 )
@@ -47,6 +48,11 @@ var configDialogueTree = questionSequence{
 			},
 			Default: "d",
 		},
+		inputNode{
+			Name:    "cube_name",
+			Prompt:  "Cube name: ",
+			Default: "MyCube",
+		},
 	},
 	AdvancedNodes: []any{
 		multiSelectNode{
@@ -80,6 +86,12 @@ type multiSelectNode struct {
 	Prompt   string
 	Options  map[string]interface{}
 	Default  string
+}
+
+type inputNode struct {
+	Name    string
+	Prompt  string
+	Default string
 }
 
 type booleanNode struct {
@@ -139,10 +151,17 @@ func handeleSelectNodeCLI(node multiSelectNode, config map[string]interface{}) {
 		_, ok := node.Options[input]
 		return ok
 	}))
+	walkTreeCLI(node.Options[config[node.Name].(string)], config, None)
 }
 
 func handeleBooleanNodeCLI(node booleanNode, config map[string]interface{}) {
 	config[node.Name] = askForBoolean(node.Question, node.Default)
+}
+
+func handeleInputNodeCLI(node inputNode, config map[string]interface{}) {
+	config[node.Name] = askForString(node.Prompt, node.Default, func(input string) bool {
+		return true
+	})
 }
 
 func walkTreeCLI(node any, config map[string]interface{}, advanced AdvancedSetting) {
@@ -153,6 +172,8 @@ func walkTreeCLI(node any, config map[string]interface{}, advanced AdvancedSetti
 		handeleSelectNodeCLI(node.(multiSelectNode), config)
 	case booleanNode:
 		handeleBooleanNodeCLI(node.(booleanNode), config)
+	case inputNode:
+		handeleInputNodeCLI(node.(inputNode), config)
 	}
 }
 
@@ -190,6 +211,7 @@ func handleQuestionSequenceGUI(node questionSequence, config map[string]interfac
 
 func handeleSelectNodeGUI(node multiSelectNode, config map[string]interface{}, parent *fyne.Container) {
 	config[node.Name] = node.Default
+	followUpContainer := container.NewVBox()
 	options := make([]string, 0, len(node.Options))
 	reverseMap := make(map[string]string)
 	for key, value := range node.Options {
@@ -216,12 +238,33 @@ func handeleSelectNodeGUI(node multiSelectNode, config map[string]interface{}, p
 	}
 	selectLabel := widget.NewLabel(node.Prompt)
 	selectWidget := widget.NewSelect(options, func(input string) {
+		followUpContainer.Objects = nil
 		key := reverseMap[input]
 		config[node.Name] = key
-		walkTreeGUI(node.Options[key], config, parent)
+		walkTreeGUI(node.Options[key], config, followUpContainer)
+		for k, option := range node.Options {
+			if k != key {
+				if _, ok := option.(questionSequence); ok {
+					for _, subNode := range option.(questionSequence).SimpleNodes {
+						switch v := subNode.(type) {
+						case multiSelectNode:
+							delete(config, v.Name)
+						case booleanNode:
+							delete(config, v.Name)
+						case inputNode:
+							delete(config, v.Name)
+						}
+					}
+				}
+			}
+		}
+
 	})
 	selectWidget.SetSelected(options[0])
-	parent.Add(container.NewHBox(selectLabel, selectWidget))
+	selectWithLabel := container.NewHBox(selectLabel, selectWidget)
+	selectWithLabel.Layout = layout.NewGridWrapLayout(fyne.NewSize(160, selectWidget.MinSize().Height))
+	parent.Add(selectWithLabel)
+	parent.Add(followUpContainer)
 }
 
 func handeleBooleanNodeGUI(node booleanNode, config map[string]interface{}, parent *fyne.Container) {
@@ -237,6 +280,23 @@ func handeleBooleanNodeGUI(node booleanNode, config map[string]interface{}, pare
 	parent.Add(checkbox)
 }
 
+func handeleInputNodeGUI(node inputNode, config map[string]interface{}, parent *fyne.Container) {
+	config[node.Name] = node.Default
+	inputLabel := widget.NewLabel(node.Prompt)
+	inputWidget := widget.NewEntry()
+	inputWidget.SetPlaceHolder(node.Default)
+	inputWidget.OnChanged = func(input string) {
+		if input == "" {
+			config[node.Name] = node.Default
+		} else {
+			config[node.Name] = input
+		}
+	}
+	inputWithLabel := container.NewHBox(inputLabel, inputWidget)
+	inputWithLabel.Layout = layout.NewGridWrapLayout(fyne.NewSize(160, inputWidget.MinSize().Height))
+	parent.Add(inputWithLabel)
+}
+
 func walkTreeGUI(node any, config map[string]interface{}, parent *fyne.Container) {
 	switch node.(type) {
 	case questionSequence:
@@ -245,5 +305,7 @@ func walkTreeGUI(node any, config map[string]interface{}, parent *fyne.Container
 		handeleSelectNodeGUI(node.(multiSelectNode), config, parent)
 	case booleanNode:
 		handeleBooleanNodeGUI(node.(booleanNode), config, parent)
+	case inputNode:
+		handeleInputNodeGUI(node.(inputNode), config, parent)
 	}
 }
