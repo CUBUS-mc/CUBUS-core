@@ -24,3 +24,11 @@ go.work
 .idea
 .idea/*
 config.json
+
+queen
+security
+drone
+database
+api
+website
+discord-bot

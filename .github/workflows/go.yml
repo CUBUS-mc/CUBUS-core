@@ -36,5 +36,5 @@ jobs:
     - name: Saving Artifacts
       uses: actions/upload-artifact@v2
       with:
-        name: windows-artifact
+        name: artifacts
         path: ./fyne-cross/dist/*

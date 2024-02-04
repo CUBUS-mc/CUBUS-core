@@ -13,7 +13,7 @@ import (
 )
 
 func loadConfig() map[string]interface{} {
-	if _, err := os.Stat("config.json"); os.IsNotExist(err) {
+	if !checkPathExists("config.json") {
 		configureGUI()
 	}
 

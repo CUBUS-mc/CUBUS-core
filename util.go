@@ -47,6 +47,13 @@ func writeFile(path string, content string) {
 	}(file)
 }
 
+func checkPathExists(path string) bool {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
 func input(prompt string) string {
 	reader := bufio.NewReader(os.Stdin)
 	print(prompt)
