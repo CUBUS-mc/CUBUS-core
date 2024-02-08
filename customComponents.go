@@ -11,19 +11,23 @@ import (
 
 type cube struct {
 	widget.Icon
-	x, y float32
-	size float32
+	x, y           float32
+	size           float32
+	selected       bool
+	selectCallback func(c *cube)
 }
 
-func newCube(textureUrl string) *cube {
+func newCube(textureUrl string, selectCallback func(c *cube)) *cube {
 	texture, err := fyne.LoadResourceFromURLString(textureUrl)
 	if err != nil {
 		panic(err)
 	}
 	cubeImage := &cube{
-		x:    400,
-		y:    300,
-		size: 150,
+		x:              400,
+		y:              300,
+		size:           150,
+		selected:       false,
+		selectCallback: selectCallback,
 	}
 	cubeImage.Resource = texture
 	cubeImage.Move(fyne.NewPos(cubeImage.x, cubeImage.y))
@@ -49,4 +53,8 @@ func (d *cube) DragEnd() {
 			d.Move(pos)
 			d.Refresh()
 		}).Start()
+}
+
+func (d *cube) Tapped(e *fyne.PointEvent) {
+	d.selectCallback(d)
 }
