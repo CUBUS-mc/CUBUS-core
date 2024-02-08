@@ -30,9 +30,6 @@ jobs:
     - name: Build for Linux
       run: fyne-cross linux -icon assets/android.png -arch=* -app-id com.virusrpi.cubus
 
-    - name: Build for Android
-      run: fyne-cross android -icon assets/android.png -arch=* -app-id com.virusrpi.cubus
-
     - name: Saving Artifacts
       uses: actions/upload-artifact@v2
       with:
