@@ -7,73 +7,59 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"github.com/google/uuid"
 )
 
 func selectCube(c *cube, infoContainerShape *canvas.Rectangle, pointerLine *canvas.Line, pointerTip *canvas.Circle) {
-	if c.selected {
-		canvas.NewPositionAnimation(
-			infoContainerShape.Position(),
-			fyne.NewPos(1400, 25),
-			time.Second/4,
-			func(pos fyne.Position) {
-				infoContainerShape.Move(pos)
-				infoContainerShape.Refresh()
-			}).Start()
-		pointerTip.Hide()
-		pointerLine.Hide()
-		c.selected = false
-	} else {
-		canvas.NewPositionAnimation(
-			infoContainerShape.Position(),
-			fyne.NewPos(1400-325, 25),
-			time.Second/4,
-			func(pos fyne.Position) {
-				infoContainerShape.Move(pos)
-				infoContainerShape.Refresh()
-			}).Start()
-		pointerTip.Move(fyne.NewPos(c.Position().X+c.size/2-5, c.Position().Y+c.size/2-5))
-		pointerTip.Show()
-		pointerLine.Resize(fyne.NewSize(0, 0))
-		pointerLine.Move(fyne.NewPos(c.Position().X+c.size/2, c.Position().Y+c.size/2))
-		pointerLine.Show()
-		canvas.NewSizeAnimation(
-			pointerLine.Size(),
-			fyne.NewSize(1400-c.Position().X-325, 2),
-			time.Second/4,
-			func(size fyne.Size) {
-				pointerLine.Resize(size)
-				pointerLine.Refresh()
-				if size.Width == 1400-c.Position().X-325 {
-					c.selected = true
-				}
-			}).Start()
-	}
+	canvas.NewPositionAnimation(
+		infoContainerShape.Position(),
+		fyne.NewPos(1400-325, 25),
+		time.Second/4,
+		func(pos fyne.Position) {
+			infoContainerShape.Move(pos)
+			infoContainerShape.Refresh()
+		}).Start()
+	pointerTip.Move(fyne.NewPos(c.Position().X+c.size/2-5, c.Position().Y+c.size/2-5))
+	pointerTip.Show()
+	pointerLine.Resize(fyne.NewSize(0, 0))
+	pointerLine.Move(fyne.NewPos(c.Position().X+c.size/2, c.Position().Y+c.size/2))
+	pointerLine.Show()
+	canvas.NewSizeAnimation(
+		pointerLine.Size(),
+		fyne.NewSize(1400-c.Position().X-325, 2),
+		time.Second/4,
+		func(size fyne.Size) {
+			pointerLine.Resize(size)
+			pointerLine.Refresh()
+		}).Start()
 }
 
-func gui(qubusApp fyne.App, defaults *Defaults) {
-	qubusWindow := qubusApp.NewWindow("QUBUS core")
-	qubusWindow.Resize(fyne.NewSize(1400, 900))
-	qubusWindow.CenterOnScreen()
-	qubusWindow.SetIcon(qubusApp.Icon())
-	qubusWindow.SetFixedSize(true)
+func unselectCube(infoContainerShape *canvas.Rectangle, pointerLine *canvas.Line, pointerTip *canvas.Circle) {
+	canvas.NewPositionAnimation(
+		infoContainerShape.Position(),
+		fyne.NewPos(1400, 25),
+		time.Second/4,
+		func(pos fyne.Position) {
+			infoContainerShape.Move(pos)
+			infoContainerShape.Refresh()
+		}).Start()
+	pointerTip.Hide()
+	pointerLine.Hide()
+}
 
-	windowMenu := fyne.NewMainMenu(
-		fyne.NewMenu("File",
-			fyne.NewMenuItem("Create a new Qube", func() {
-				println("Create")
-			}),
-			fyne.NewMenuItem("Export config", func() {
-				println("Export config")
-			}),
-			fyne.NewMenuItem("Import config", func() {
-				println("Import config")
-			}),
-			fyne.NewMenuItem("Settings", func() {
-				println("Settings")
-			}),
-		),
-	)
-	qubusWindow.SetMainMenu(windowMenu)
+func gui(cubusApp fyne.App, defaults *Defaults) {
+	cubeStrings := cubusApp.Preferences().StringListWithFallback("cubes", []string{})
+	cubusApp.Preferences().SetStringList("cubes", cubeStrings)
+	cubeConfigs := make([]map[string]interface{}, len(cubeStrings))
+	for i, cubeString := range cubeStrings {
+		cubeConfigs[i] = JsonStringToObject(cubeString)
+	}
+
+	cubusWindow := cubusApp.NewWindow("QUBUS core")
+	cubusWindow.Resize(fyne.NewSize(1400, 900))
+	cubusWindow.CenterOnScreen()
+	cubusWindow.SetIcon(cubusApp.Icon())
+	cubusWindow.SetFixedSize(true)
 
 	infoContainerShape := canvas.NewRectangle(color.White)
 	infoContainerShape.Resize(fyne.NewSize(300, 825))
@@ -87,22 +73,55 @@ func gui(qubusApp fyne.App, defaults *Defaults) {
 	pointerTip.Resize(fyne.NewSize(10, 10))
 	pointerTip.Hide()
 
-	cubeImage := newCube(defaults.CubeAssetURL, func(c *cube) { selectCube(c, infoContainerShape, pointerLine, pointerTip) })
+	cubeContainerObject := newCubeContainer(func() { unselectCube(infoContainerShape, pointerLine, pointerTip) }, 500, 300)
+	for _, cubeConfig := range cubeConfigs {
+		cubeContainerObject.AddCube(defaults.CubeAssetURL, func(c *cube) { selectCube(c, infoContainerShape, pointerLine, pointerTip) }, cubeConfig["id"].(string))
+	}
 
-	mainContainer := container.NewWithoutLayout(cubeImage, infoContainerShape, pointerLine, pointerTip)
-	qubusWindow.SetContent(mainContainer)
+	windowMenu := fyne.NewMainMenu(
+		fyne.NewMenu("File",
+			fyne.NewMenuItem("Create a new Qube", func() {
+				var NewUuid = uuid.New().String()
+				cubeConfigs = append(cubeConfigs, map[string]interface{}{"id": NewUuid})
+				cubeStrings = []string{}
+				for _, cubeConfig := range cubeConfigs {
+					cubeStrings = append(cubeStrings, ObjectToJsonString(cubeConfig))
+				}
+				cubusApp.Preferences().SetStringList("cubes", cubeStrings)
+				cubeContainerObject.AddCube(defaults.CubeAssetURL, func(c *cube) { selectCube(c, infoContainerShape, pointerLine, pointerTip) }, NewUuid)
+			}),
+			fyne.NewMenuItem("Export config", func() {
+				println("Export config")
+			}),
+			fyne.NewMenuItem("Import config", func() {
+				println("Import config")
+			}),
+			fyne.NewMenuItem("Settings", func() {
+				println("Settings")
+			}),
+		),
+	)
+	cubusWindow.SetMainMenu(windowMenu)
+
+	mainContainer := container.NewWithoutLayout(cubeContainerObject.Container, infoContainerShape, pointerLine, pointerTip)
+	cubusWindow.SetContent(mainContainer)
 
 	go func() {
 		for {
 			mainContainer.Refresh()
 			pointerTip.Refresh()
-			if cubeImage.selected {
-				pointerTip.Move(fyne.NewPos(cubeImage.Position().X+cubeImage.size/2-5, cubeImage.Position().Y+cubeImage.size/2-5))
-				pointerLine.Move(fyne.NewPos(cubeImage.Position().X+cubeImage.size/2, cubeImage.Position().Y+cubeImage.size/2))
-				pointerLine.Resize(fyne.NewSize(1400-cubeImage.Position().X-325, 2))
+			if cubeContainerObject.selected != nil {
+				pointerTip.Move(fyne.NewPos(cubeContainerObject.selected.Position().X+cubeContainerObject.selected.size/2-5, cubeContainerObject.selected.Position().Y+cubeContainerObject.selected.size/2-5))
+				pointerLine.Move(fyne.NewPos(cubeContainerObject.selected.Position().X+cubeContainerObject.selected.size/2, cubeContainerObject.selected.Position().Y+cubeContainerObject.selected.size/2))
+				time.AfterFunc(time.Second/4, func() {
+					if cubeContainerObject.selected == nil {
+						return
+					}
+					pointerLine.Resize(fyne.NewSize(1400-cubeContainerObject.selected.Position().X-325, 2))
+				})
 			}
 		}
 	}()
 
-	qubusWindow.ShowAndRun()
+	cubusWindow.ShowAndRun()
 }
