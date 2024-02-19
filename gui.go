@@ -7,44 +7,54 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/widget"
 	"github.com/google/uuid"
 )
 
-func selectCube(c *cube, infoContainerShape *canvas.Rectangle, pointerLine *canvas.Line, pointerTip *canvas.Circle) {
-	canvas.NewPositionAnimation(
-		infoContainerShape.Position(),
-		fyne.NewPos(1400-325, 25),
-		time.Second/4,
-		func(pos fyne.Position) {
-			infoContainerShape.Move(pos)
-			infoContainerShape.Refresh()
-		}).Start()
-	pointerTip.Move(fyne.NewPos(c.Position().X+c.size/2-5, c.Position().Y+c.size/2-5))
-	pointerTip.Show()
-	pointerLine.Resize(fyne.NewSize(0, 0))
-	pointerLine.Move(fyne.NewPos(c.Position().X+c.size/2, c.Position().Y+c.size/2))
-	pointerLine.Show()
-	canvas.NewSizeAnimation(
-		pointerLine.Size(),
-		fyne.NewSize(1400-c.Position().X-325, 2),
-		time.Second/4,
-		func(size fyne.Size) {
-			pointerLine.Resize(size)
-			pointerLine.Refresh()
-		}).Start()
+func selectCube(c *cube, infoContainerShape *canvas.Rectangle, pointerLine *canvas.Line, pointerTip *canvas.Circle, infoContainerText *widget.RichText) {
+	go func() {
+		infoContainerText.ParseMarkdown("# Cube info\n\n**ID:** " + c.id) // TODO: change text color
+		canvas.NewPositionAnimation(
+			infoContainerShape.Position(),
+			fyne.NewPos(1400-325, 25),
+			time.Second/4,
+			func(pos fyne.Position) {
+				infoContainerShape.Move(pos)
+				infoContainerShape.Refresh()
+				infoContainerText.Move(fyne.NewPos(pos.X+5, pos.Y+10))
+				infoContainerText.Refresh()
+			}).Start()
+		pointerTip.Move(fyne.NewPos(c.Position().X+c.size/2-5, c.Position().Y+c.size/2-5))
+		pointerTip.Show()
+		pointerLine.Resize(fyne.NewSize(0, 0))
+		pointerLine.Move(fyne.NewPos(c.Position().X+c.size/2, c.Position().Y+c.size/2))
+		pointerLine.Show()
+		canvas.NewSizeAnimation(
+			pointerLine.Size(),
+			fyne.NewSize(1400-c.Position().X-325, 2),
+			time.Second/4,
+			func(size fyne.Size) {
+				pointerLine.Resize(size)
+				pointerLine.Refresh()
+			}).Start()
+	}()
 }
 
-func unselectCube(infoContainerShape *canvas.Rectangle, pointerLine *canvas.Line, pointerTip *canvas.Circle) {
-	canvas.NewPositionAnimation(
-		infoContainerShape.Position(),
-		fyne.NewPos(1400, 25),
-		time.Second/4,
-		func(pos fyne.Position) {
-			infoContainerShape.Move(pos)
-			infoContainerShape.Refresh()
-		}).Start()
-	pointerTip.Hide()
-	pointerLine.Hide()
+func unselectCube(infoContainerShape *canvas.Rectangle, pointerLine *canvas.Line, pointerTip *canvas.Circle, infoContainerText *widget.RichText) {
+	go func() {
+		canvas.NewPositionAnimation(
+			infoContainerShape.Position(),
+			fyne.NewPos(1400, 25),
+			time.Second/4,
+			func(pos fyne.Position) {
+				infoContainerShape.Move(pos)
+				infoContainerShape.Refresh()
+				infoContainerText.Move(fyne.NewPos(pos.X+5, pos.Y+10))
+				infoContainerText.Refresh()
+			}).Start()
+		pointerTip.Hide()
+		pointerLine.Hide()
+	}()
 }
 
 func gui(cubusApp fyne.App, defaults *Defaults) {
@@ -66,6 +76,10 @@ func gui(cubusApp fyne.App, defaults *Defaults) {
 	infoContainerShape.Move(fyne.NewPos(1400, 25))
 	infoContainerShape.CornerRadius = 12
 
+	infoContainerText := widget.NewRichTextFromMarkdown("")
+	infoContainerText.Resize(fyne.NewSize(280, 50))
+	infoContainerText.Wrapping = fyne.TextWrapBreak
+
 	pointerLine := canvas.NewLine(color.White)
 	pointerLine.StrokeWidth = 2
 	pointerLine.Hide()
@@ -73,9 +87,9 @@ func gui(cubusApp fyne.App, defaults *Defaults) {
 	pointerTip.Resize(fyne.NewSize(10, 10))
 	pointerTip.Hide()
 
-	cubeContainerObject := newCubeContainer(func() { unselectCube(infoContainerShape, pointerLine, pointerTip) }, 500, 300)
+	cubeContainerObject := newCubeContainer(func() { unselectCube(infoContainerShape, pointerLine, pointerTip, infoContainerText) }, 500, 300)
 	for _, cubeConfig := range cubeConfigs {
-		cubeContainerObject.AddCube(defaults.CubeAssetURL, func(c *cube) { selectCube(c, infoContainerShape, pointerLine, pointerTip) }, cubeConfig["id"].(string))
+		cubeContainerObject.AddCube(defaults.CubeAssetURL, func(c *cube) { selectCube(c, infoContainerShape, pointerLine, pointerTip, infoContainerText) }, cubeConfig["id"].(string))
 	}
 
 	windowMenu := fyne.NewMainMenu(
@@ -88,7 +102,7 @@ func gui(cubusApp fyne.App, defaults *Defaults) {
 					cubeStrings = append(cubeStrings, ObjectToJsonString(cubeConfig))
 				}
 				cubusApp.Preferences().SetStringList("cubes", cubeStrings)
-				cubeContainerObject.AddCube(defaults.CubeAssetURL, func(c *cube) { selectCube(c, infoContainerShape, pointerLine, pointerTip) }, NewUuid)
+				cubeContainerObject.AddCube(defaults.CubeAssetURL, func(c *cube) { selectCube(c, infoContainerShape, pointerLine, pointerTip, infoContainerText) }, NewUuid)
 			}),
 			fyne.NewMenuItem("Export config", func() {
 				println("Export config")
@@ -103,7 +117,7 @@ func gui(cubusApp fyne.App, defaults *Defaults) {
 	)
 	cubusWindow.SetMainMenu(windowMenu)
 
-	mainContainer := container.NewWithoutLayout(cubeContainerObject.Container, infoContainerShape, pointerLine, pointerTip)
+	mainContainer := container.NewWithoutLayout(cubeContainerObject.Container, pointerLine, pointerTip, infoContainerShape, infoContainerText)
 	cubusWindow.SetContent(mainContainer)
 
 	go func() {
