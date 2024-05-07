@@ -38,7 +38,7 @@ var CubeTypes = map[string]CubeType{
 	},
 	"drone": {
 		Label:       "Drone",
-		Description: "The Drone cubes are responsible for scanning, modifying and probiding a proxy for the CUBUS network.",
+		Description: "The Drone cubes are responsible for scanning, modifying and providing a proxy for the CUBUS network.",
 	},
 	"generic-worker": {
 		Label:       "Generic Worker",

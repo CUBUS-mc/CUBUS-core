@@ -2,12 +2,11 @@ package gui
 
 import (
 	"context"
-	"math"
-	"time"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/widget"
+	"math"
+	"time"
 
 	"golang.org/x/sync/semaphore"
 )
