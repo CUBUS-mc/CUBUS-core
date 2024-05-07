@@ -1,18 +1,16 @@
-package main
+package gui
 
 import (
-	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/widget"
-	"image/color"
-	"time"
-
+	"CUBUS/shared"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 	"github.com/google/uuid"
+	"image/color"
+	"time"
 )
-
-// TODO: Fix bug where spam clicking the cube crashes the app
 
 func selectCube(c *cube, infoContainerShape *canvas.Rectangle, pointerLine *canvas.Line, pointerTip *canvas.Circle, infoContainerText *widget.RichText) {
 	go func() {
@@ -75,12 +73,12 @@ func unselectCube(infoContainerShape *canvas.Rectangle, pointerLine *canvas.Line
 	}()
 }
 
-func gui(cubusApp fyne.App, defaults *Defaults) {
+func Gui(cubusApp fyne.App, defaults *shared.Defaults) {
 	cubeStrings := cubusApp.Preferences().StringListWithFallback("cubes", []string{})
 	cubusApp.Preferences().SetStringList("cubes", cubeStrings)
 	cubeConfigs := make([]map[string]interface{}, len(cubeStrings))
 	for i, cubeString := range cubeStrings {
-		cubeConfigs[i] = JsonStringToObject(cubeString)
+		cubeConfigs[i] = shared.JsonStringToObject(cubeString)
 	}
 
 	cubusWindow := cubusApp.NewWindow("QUBUS core")
@@ -118,7 +116,7 @@ func gui(cubusApp fyne.App, defaults *Defaults) {
 				cubeConfigs = append(cubeConfigs, map[string]interface{}{"id": NewUuid})
 				cubeStrings = []string{}
 				for _, cubeConfig := range cubeConfigs {
-					cubeStrings = append(cubeStrings, ObjectToJsonString(cubeConfig))
+					cubeStrings = append(cubeStrings, shared.ObjectToJsonString(cubeConfig))
 				}
 				cubusApp.Preferences().SetStringList("cubes", cubeStrings)
 				cubeContainerObject.AddCube(defaults.CubeAssetURL, func(c *cube) { selectCube(c, infoContainerShape, pointerLine, pointerTip, infoContainerText) }, NewUuid)
@@ -145,14 +143,20 @@ func gui(cubusApp fyne.App, defaults *Defaults) {
 			infoContainerShape.Refresh()
 			pointerLine.Refresh()
 			pointerTip.Refresh()
-			if cubeContainerObject.selected != nil {
-				pointerTip.Move(fyne.NewPos(cubeContainerObject.selected.Position().X+cubeContainerObject.selected.size/2-5, cubeContainerObject.selected.Position().Y+cubeContainerObject.selected.size/2-40))
-				pointerLine.Move(fyne.NewPos(cubeContainerObject.selected.Position().X+cubeContainerObject.selected.size/2, cubeContainerObject.selected.Position().Y+cubeContainerObject.selected.size/2-35))
+			cubeContainerObject.mu.Lock()
+			selected := cubeContainerObject.selected
+			cubeContainerObject.mu.Unlock()
+			if selected != nil {
+				pointerTip.Move(fyne.NewPos(selected.Position().X+selected.size/2-5, selected.Position().Y+selected.size/2-40))
+				pointerLine.Move(fyne.NewPos(selected.Position().X+selected.size/2, selected.Position().Y+selected.size/2-35))
 				time.AfterFunc(time.Second/4, func() {
-					if cubeContainerObject.selected == nil {
+					cubeContainerObject.mu.Lock()
+					selected := cubeContainerObject.selected
+					cubeContainerObject.mu.Unlock()
+					if selected == nil {
 						return
 					}
-					pointerLine.Resize(fyne.NewSize(1400-cubeContainerObject.selected.Position().X-325, 2))
+					pointerLine.Resize(fyne.NewSize(1400-selected.Position().X-325, 2))
 				})
 			}
 		}

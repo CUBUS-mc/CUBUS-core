@@ -1,8 +1,9 @@
-package main
+package gui
 
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"sync"
 )
 
 type cubeContainer struct {
@@ -13,6 +14,7 @@ type cubeContainer struct {
 	selected         *cube
 	unselectCallback func()
 	isoDistance      float32
+	mu               sync.Mutex
 }
 
 func newCubeContainer(unselectCallback func(), x float32, y float32) *cubeContainer {
@@ -26,6 +28,8 @@ func newCubeContainer(unselectCallback func(), x float32, y float32) *cubeContai
 }
 
 func (cc *cubeContainer) changeSelected(c *cube, selectCallback func(c *cube)) {
+	cc.mu.Lock()
+	defer cc.mu.Unlock()
 	if cc.selected == c {
 		cc.selected = nil
 		cc.unselectCallback()
