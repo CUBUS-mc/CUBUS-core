@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="161" height="169" fill="none" viewBox="0 0 161 169">
-  <path fill="#F3F3F3" fill-opacity=".04" stroke="#000" stroke-miterlimit="1" stroke-width="3" d="M150 124.25 79 84.5 8 124.25 79 164l71-39.75Z"/>
-  <path fill="#F3F3F3" fill-opacity=".04" stroke="#000" stroke-miterlimit="1" stroke-width="3" d="M150 124.25 79 84.5V5l71 39.75v79.5ZM79 84.5 8 124.25v-79.5L79 5v79.5Z"/>
-  <path fill="#F3F3F3" fill-opacity=".04" stroke="#000" stroke-miterlimit="1" stroke-width="3" d="M79 164 8 124.25v-79.5L79 84.5V164Zm0 0 71-39.75v-79.5L79 84.5V164Z"/>
-  <path fill="#F3F3F3" fill-opacity=".04" stroke="#000" stroke-miterlimit="1" stroke-width="3" d="M150 44.75 79 5 8 44.75 79 84.5l71-39.75Z"/>
+  <path fill="#818181" stroke="#000" stroke-miterlimit="1" stroke-width="3" d="M150 124.25 79 84.5 8 124.25 79 164l71-39.75Z"/>
+  <path fill="#818181" stroke="#000" stroke-miterlimit="1" stroke-width="3" d="M150 124.25 79 84.5V5l71 39.75v79.5ZM79 84.5 8 124.25v-79.5L79 5v79.5Z"/>
+  <path fill="#818181" stroke="#000" stroke-miterlimit="1" stroke-width="3" d="M79 164 8 124.25v-79.5L79 84.5V164Zm0 0 71-39.75v-79.5L79 84.5V164Z"/>
+  <path fill="#818181" stroke="#000" stroke-miterlimit="1" stroke-width="3" d="M150 44.75 79 5 8 44.75 79 84.5l71-39.75Z"/>
 </svg>
