@@ -1,13 +1,18 @@
 package main
 
 import (
+	"context"
 	"math"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/widget"
+
+	"golang.org/x/sync/semaphore"
 )
+
+var sem = semaphore.NewWeighted(1)
 
 type cube struct {
 	widget.Icon
@@ -44,7 +49,11 @@ func (d *cube) Dragged(e *fyne.DragEvent) {
 	if !d.isPointInHitbox(e.Position.X, e.Position.Y) {
 		return
 	}
+	if err := sem.Acquire(context.Background(), 1); err != nil {
+		return
+	}
 	go func() {
+		defer sem.Release(1)
 		dx := d.x - (d.Position().X + e.Dragged.DX)
 		dy := d.y - (d.Position().Y + e.Dragged.DY)
 		distance := math.Sqrt(float64(dx*dx + dy*dy))
@@ -55,16 +64,7 @@ func (d *cube) Dragged(e *fyne.DragEvent) {
 }
 
 func (d *cube) DragEnd() {
-	go func() {
-		canvas.NewPositionAnimation(
-			d.Position(),
-			fyne.NewPos(d.x, d.y),
-			time.Second/2,
-			func(pos fyne.Position) {
-				d.Move(pos)
-				d.Refresh()
-			}).Start()
-	}()
+	d.AnimateTo(d.x, d.y)
 }
 
 func (d *cube) Tapped(e *fyne.PointEvent) {
@@ -77,10 +77,18 @@ func (d *cube) Tapped(e *fyne.PointEvent) {
 func (d *cube) MoveSmoothlyTo(x float32, y float32) {
 	d.x = x
 	d.y = y
+	d.AnimateTo(x, y)
+}
+
+func (d *cube) AnimateTo(x float32, y float32) {
+	if err := sem.Acquire(context.Background(), 1); err != nil {
+		return
+	}
 	go func() {
+		defer sem.Release(1)
 		canvas.NewPositionAnimation(
 			d.Position(),
-			fyne.NewPos(d.x, d.y),
+			fyne.NewPos(x, y),
 			time.Second/2,
 			func(pos fyne.Position) {
 				d.Move(pos)

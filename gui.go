@@ -13,7 +13,18 @@ import (
 
 func selectCube(c *cube, infoContainerShape *canvas.Rectangle, pointerLine *canvas.Line, pointerTip *canvas.Circle, infoContainerText *widget.RichText) {
 	go func() {
-		infoContainerText.ParseMarkdown("# Cube info\n\n**ID:** " + c.id) // TODO: change text color
+		infoContainerText.Segments = []widget.RichTextSegment{ // TODO: fix this so text is visible
+			&widget.TextSegment{
+				Text: "Cube info",
+				Style: widget.RichTextStyle{
+					ColorName: "black",
+					TextStyle: fyne.TextStyle{
+						Bold: true,
+					},
+				},
+			},
+		}
+		infoContainerText.Refresh()
 		canvas.NewPositionAnimation(
 			infoContainerShape.Position(),
 			fyne.NewPos(1400-325, 25),
@@ -76,7 +87,7 @@ func gui(cubusApp fyne.App, defaults *Defaults) {
 	infoContainerShape.Move(fyne.NewPos(1400, 25))
 	infoContainerShape.CornerRadius = 12
 
-	infoContainerText := widget.NewRichTextFromMarkdown("")
+	infoContainerText := widget.NewRichText()
 	infoContainerText.Resize(fyne.NewSize(280, 50))
 	infoContainerText.Wrapping = fyne.TextWrapBreak
 
@@ -91,6 +102,7 @@ func gui(cubusApp fyne.App, defaults *Defaults) {
 	for _, cubeConfig := range cubeConfigs {
 		cubeContainerObject.AddCube(defaults.CubeAssetURL, func(c *cube) { selectCube(c, infoContainerShape, pointerLine, pointerTip, infoContainerText) }, cubeConfig["id"].(string))
 	}
+	cubeContainerObject.CenterCubes()
 
 	windowMenu := fyne.NewMainMenu(
 		fyne.NewMenu("File",
@@ -103,6 +115,7 @@ func gui(cubusApp fyne.App, defaults *Defaults) {
 				}
 				cubusApp.Preferences().SetStringList("cubes", cubeStrings)
 				cubeContainerObject.AddCube(defaults.CubeAssetURL, func(c *cube) { selectCube(c, infoContainerShape, pointerLine, pointerTip, infoContainerText) }, NewUuid)
+				cubeContainerObject.CenterCubes()
 			}),
 			fyne.NewMenuItem("Export config", func() {
 				println("Export config")
@@ -122,11 +135,14 @@ func gui(cubusApp fyne.App, defaults *Defaults) {
 
 	go func() {
 		for {
-			mainContainer.Refresh()
+			// mainContainer.Refresh()
+			infoContainerShape.Refresh()
+			infoContainerText.Refresh()
+			pointerLine.Refresh()
 			pointerTip.Refresh()
 			if cubeContainerObject.selected != nil {
-				pointerTip.Move(fyne.NewPos(cubeContainerObject.selected.Position().X+cubeContainerObject.selected.size/2-5, cubeContainerObject.selected.Position().Y+cubeContainerObject.selected.size/2-5))
-				pointerLine.Move(fyne.NewPos(cubeContainerObject.selected.Position().X+cubeContainerObject.selected.size/2, cubeContainerObject.selected.Position().Y+cubeContainerObject.selected.size/2))
+				pointerTip.Move(fyne.NewPos(cubeContainerObject.selected.Position().X+cubeContainerObject.selected.size/2-5, cubeContainerObject.selected.Position().Y+cubeContainerObject.selected.size/2-40))
+				pointerLine.Move(fyne.NewPos(cubeContainerObject.selected.Position().X+cubeContainerObject.selected.size/2, cubeContainerObject.selected.Position().Y+cubeContainerObject.selected.size/2-35))
 				time.AfterFunc(time.Second/4, func() {
 					if cubeContainerObject.selected == nil {
 						return
