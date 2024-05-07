@@ -1,26 +1,33 @@
 package main
 
 import (
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 	"image/color"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/widget"
 	"github.com/google/uuid"
 )
 
+// TODO: Fix bug where spam clicking the cube crashes the app
+
 func selectCube(c *cube, infoContainerShape *canvas.Rectangle, pointerLine *canvas.Line, pointerTip *canvas.Circle, infoContainerText *widget.RichText) {
 	go func() {
-		infoContainerText.Segments = []widget.RichTextSegment{ // TODO: fix this so text is visible
+		infoContainerText.Segments = []widget.RichTextSegment{
 			&widget.TextSegment{
-				Text: "Cube info",
+				Text: "Cube info\n",
 				Style: widget.RichTextStyle{
-					ColorName: "black",
-					TextStyle: fyne.TextStyle{
-						Bold: true,
-					},
+					TextStyle: fyne.TextStyle{Bold: true},
+					ColorName: theme.ColorNameBackground,
+				},
+			},
+			&widget.TextSegment{
+				Text: "Cube ID: " + c.id + "\n",
+				Style: widget.RichTextStyle{
+					ColorName: theme.ColorNameBackground,
 				},
 			},
 		}
@@ -88,7 +95,7 @@ func gui(cubusApp fyne.App, defaults *Defaults) {
 	infoContainerShape.CornerRadius = 12
 
 	infoContainerText := widget.NewRichText()
-	infoContainerText.Resize(fyne.NewSize(280, 50))
+	infoContainerText.Resize(fyne.NewSize(290, 800))
 	infoContainerText.Wrapping = fyne.TextWrapBreak
 
 	pointerLine := canvas.NewLine(color.White)
@@ -135,9 +142,7 @@ func gui(cubusApp fyne.App, defaults *Defaults) {
 
 	go func() {
 		for {
-			// mainContainer.Refresh()
 			infoContainerShape.Refresh()
-			infoContainerText.Refresh()
 			pointerLine.Refresh()
 			pointerTip.Refresh()
 			if cubeContainerObject.selected != nil {
