@@ -7,14 +7,13 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/google/uuid"
 	"image/color"
 	"time"
 )
 
 func selectCube(c *cube, infoContainerShape *canvas.Rectangle, pointerLine *canvas.Line, pointerTip *canvas.Circle, infoContainerText *widget.RichText) {
 	go func() {
-		infoContainerText.Segments = []widget.RichTextSegment{
+		infoContainerText.Segments = []widget.RichTextSegment{ // TODO: Show all info about the cube and add a button to delete or edit the cube
 			&widget.TextSegment{
 				Text: "Cube info\n",
 				Style: widget.RichTextStyle{
@@ -111,25 +110,25 @@ func Gui(cubusApp fyne.App, defaults *shared.Defaults) {
 
 	windowMenu := fyne.NewMainMenu(
 		fyne.NewMenu("File",
-			fyne.NewMenuItem("Create a new Qube", func() {
-				var NewUuid = uuid.New().String()
-				cubeConfigs = append(cubeConfigs, map[string]interface{}{"id": NewUuid})
-				cubeStrings = []string{}
-				for _, cubeConfig := range cubeConfigs {
-					cubeStrings = append(cubeStrings, shared.ObjectToJsonString(cubeConfig))
-				}
-				cubusApp.Preferences().SetStringList("cubes", cubeStrings)
-				cubeContainerObject.AddCube(defaults.CubeAssetURL, func(c *cube) { selectCube(c, infoContainerShape, pointerLine, pointerTip, infoContainerText) }, NewUuid)
-				cubeContainerObject.CenterCubes()
+			fyne.NewMenuItem("Create a new Cube", func() {
+				setupDialog(cubusWindow) // TODO: move the preference update to the setupDialog function and only update the cubeContainerObject with the new cube
+				// cubeConfigs = append(cubeConfigs, map[string]interface{}{"id": cubeConfig.id})
+				// cubeStrings = []string{}
+				// for _, cubeConfig := range cubeConfigs {
+				// 	cubeStrings = append(cubeStrings, shared.ObjectToJsonString(cubeConfig))
+				// }
+				// cubusApp.Preferences().SetStringList("cubes", cubeStrings)
+				// cubeContainerObject.AddCube(defaults.CubeAssetURL, func(c *cube) { selectCube(c, infoContainerShape, pointerLine, pointerTip, infoContainerText) }, cubeConfig.id)
+				// cubeContainerObject.CenterCubes()
 			}),
 			fyne.NewMenuItem("Export config", func() {
-				println("Export config")
+				println("Export config") // TODO: implement config export
 			}),
 			fyne.NewMenuItem("Import config", func() {
-				println("Import config")
+				println("Import config") // TODO: implement config import
 			}),
 			fyne.NewMenuItem("Settings", func() {
-				println("Settings")
+				println("Settings") // TODO: implement settings (e.g. change the language)
 			}),
 		),
 	)

@@ -23,7 +23,7 @@ type cube struct {
 }
 
 func newCube(textureUrl string, selectCallback func(c *cube), id string, x float32, y float32) *cube {
-	texture, err := fyne.LoadResourceFromURLString(textureUrl)
+	texture, err := fyne.LoadResourceFromURLString(textureUrl) // TODO: Change texture based on cube type
 	if err != nil {
 		panic(err)
 	}
@@ -41,7 +41,7 @@ func newCube(textureUrl string, selectCallback func(c *cube), id string, x float
 }
 
 func (d *cube) isPointInHitbox(_, _ float32) bool {
-	// TODO: Implement this
+	// TODO: Create a better hitbox for the cubes
 	return true
 }
 
