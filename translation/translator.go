@@ -1,43 +1,47 @@
 package translation
 
 import (
+	"github.com/BurntSushi/toml"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"golang.org/x/text/language"
-	"golang.org/x/text/message"
-	"golang.org/x/text/message/catalog"
+	"path/filepath"
+	"runtime"
 )
 
-//go:generate gotext -srclang=en-US update -out=catalog.go -lang=en-US,de-DE CUBUS-core
-
-// TODO: use "golang.org/x/text/language" "golang.org/x/text/message" "golang.org/x/text/message/catalog" to write the function t() that translates the english strings to the target language. If the input isn't english but a key, it should return the corresponding string in the target language.
-// TODO: then add a method to change the target language
-// TODO: The translations should be stored in a separate file and loaded at runtime
-// TODO: replace all strings in the code with the t() function
-
-var printer *message.Printer
-var builder *catalog.Builder
+var bundle *i18n.Bundle
+var localizer *i18n.Localizer
 
 func init() {
-	builder = catalog.NewBuilder()
-	err := LoadTranslations()
-	if err != nil {
-		return
+	bundle = i18n.NewBundle(language.English)
+	bundle.RegisterUnmarshalFunc("toml", toml.Unmarshal)
+
+	// Get the current file's path
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("No caller information")
 	}
-	printer = message.NewPrinter(language.English)
+
+	// Get the directory of the current file
+	dir := filepath.Dir(filename)
+
+	// Construct the absolute paths to the TOML files
+	enPath := filepath.Join(dir, "locals", "active.en.toml")
+	dePath := filepath.Join(dir, "locals", "active.de.toml")
+
+	bundle.MustLoadMessageFile(enPath)
+	bundle.MustLoadMessageFile(dePath)
+
+	localizer = i18n.NewLocalizer(bundle, "en-US")
 }
 
 func T(key string) string {
-	return printer.Sprintf(key)
+	return localizer.MustLocalize(&i18n.LocalizeConfig{
+		DefaultMessage: &i18n.Message{
+			ID: key,
+		},
+	})
 }
 
-func ChangeLanguage(lang string) error {
-	tag, err := language.Parse(lang)
-	if err != nil {
-		return err
-	}
-	printer = message.NewPrinter(tag)
-	return nil
-}
-
-func LoadTranslations() error {
-	return nil
+func ChangeLanguage(lang string) {
+	localizer = i18n.NewLocalizer(bundle, lang)
 }
