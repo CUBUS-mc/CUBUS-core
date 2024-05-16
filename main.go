@@ -15,7 +15,7 @@ func main() {
 	cubusApp.SetIcon(icon)
 	defaultValues := shared.NewDefaults()
 
-	ui := shared.CLI //shared.UiType(cubusApp.Preferences().StringWithFallback("ui", string(defaultValues.UI)))
+	ui := shared.UiType(cubusApp.Preferences().StringWithFallback("ui", string(defaultValues.UI)))
 	cubusApp.Preferences().SetString("ui", string(ui))
 
 	switch ui {
