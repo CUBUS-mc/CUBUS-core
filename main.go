@@ -1,14 +1,13 @@
 package main
 
 import (
-	"CUBUS/gui"
-	"CUBUS/shared"
-	"fyne.io/fyne/v2"
+	"CUBUS-core/gui"
+	"CUBUS-core/shared"
 	"fyne.io/fyne/v2/app"
 )
 
 func main() {
-	cubusApp := app.NewWithID("com.virusrpi.cubus")
+	cubusApp := app.NewWithID("com.virusrpi.cubus-core")
 	icon, _ := fyne.LoadResourceFromURLString("https://raw.githubusercontent.com/CUBUS-mc/CUBUS-core/master/assets/android.png")
 	cubusApp.SetIcon(icon)
 	defaultValues := shared.NewDefaults()

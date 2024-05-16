@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"CUBUS/shared"
+	"CUBUS-core/shared"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
