@@ -2,6 +2,7 @@ package gui
 
 import (
 	"CUBUS-core/shared"
+	"CUBUS-core/translation"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -73,6 +74,7 @@ func unselectCube(infoContainerShape *canvas.Rectangle, pointerLine *canvas.Line
 }
 
 func Gui(cubusApp fyne.App, defaults *shared.Defaults) {
+	T := translation.T
 	cubeStrings := cubusApp.Preferences().StringListWithFallback("cubes", []string{})
 	cubusApp.Preferences().SetStringList("cubes", cubeStrings)
 	cubeConfigs := make([]map[string]interface{}, len(cubeStrings))
@@ -80,7 +82,7 @@ func Gui(cubusApp fyne.App, defaults *shared.Defaults) {
 		cubeConfigs[i] = shared.JsonStringToObject(cubeString)
 	}
 
-	cubusWindow := cubusApp.NewWindow("QUBUS core")
+	cubusWindow := cubusApp.NewWindow("CUBUS core")
 	cubusWindow.Resize(fyne.NewSize(1400, 900))
 	cubusWindow.CenterOnScreen()
 	cubusWindow.SetIcon(cubusApp.Icon())
@@ -109,7 +111,7 @@ func Gui(cubusApp fyne.App, defaults *shared.Defaults) {
 	cubeContainerObject.CenterCubes()
 
 	windowMenu := fyne.NewMainMenu(
-		fyne.NewMenu("File",
+		fyne.NewMenu(T("File"),
 			fyne.NewMenuItem("Create a new Cube", func() {
 				setupDialog(cubusWindow) // TODO: move the preference update to the setupDialog function and only update the cubeContainerObject with the new cube
 				// cubeConfigs = append(cubeConfigs, map[string]interface{}{"id": cubeConfig.id})
@@ -121,13 +123,13 @@ func Gui(cubusApp fyne.App, defaults *shared.Defaults) {
 				// cubeContainerObject.AddCube(defaults.CubeAssetURL, func(c *cube) { selectCube(c, infoContainerShape, pointerLine, pointerTip, infoContainerText) }, cubeConfig.id)
 				// cubeContainerObject.CenterCubes()
 			}),
-			fyne.NewMenuItem("Export config", func() {
+			fyne.NewMenuItem(T("Export config"), func() {
 				println("Export config") // TODO: implement config export
 			}),
-			fyne.NewMenuItem("Import config", func() {
+			fyne.NewMenuItem(T("Import config"), func() {
 				println("Import config") // TODO: implement config import
 			}),
-			fyne.NewMenuItem("Settings", func() {
+			fyne.NewMenuItem(T("Settings"), func() {
 				println("Settings") // TODO: implement settings (e.g. change the language)
 			}),
 		),

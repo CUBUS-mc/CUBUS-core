@@ -6,3 +6,33 @@ other = "CLI bisher nicht implementiert"
 
 ["Hello, world!"]
 other = "Hallo, Welt!"
+
+[Settings]
+other = "Einstellungen"
+
+["Export config"]
+other = "Konfiguration exportieren"
+
+["Import config"]
+other = "Konfiguration importieren"
+
+[File]
+other = "Datei"
+
+[Type]
+other = "Typ"
+
+[Local]
+other = "Lokal"
+
+["Public Key"]
+other = "Public Key"
+
+[Remote]
+other = "Remote"
+
+[Setup]
+other = "Setup"
+
+[Location]
+other = "Ort"
