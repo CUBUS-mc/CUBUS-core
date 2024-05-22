@@ -1,13 +1,6 @@
-package shared
+package forms
 
-import "crypto"
-
-type CubeType struct {
-	Label       string
-	Description string
-}
-
-var CubeTypes = map[string]CubeType{
+var CubeTypes = map[string]Option{
 	"queen": {
 		Label:       "Queen",
 		Description: "The Queen is the central cube in the CUBUS network. It is the C2 server. There can only be one Queen in a CUBUS subnet.",
@@ -46,11 +39,53 @@ var CubeTypes = map[string]CubeType{
 	},
 }
 
-type CubeConfigType struct {
-	Id        string
-	CubeType  CubeType
-	PublicKey crypto.PublicKey
-}
+func getCubeSetupForm() *Form {
+	queenCubeSetupFields := NewFieldGroup(
+		"queenCubeSetup",
+		[]DisplayCondition{&HasValueDisplayCondition{fieldId: "cubeType", value: "queen"}},
+		[]Validator{&IsValidValidator{fieldIds: []string{"queenName"}}},
+		"Queen Cube Setup",
+		NewTextField(
+			"queenName",
+			[]DisplayCondition{&AlwaysDisplay{}},
+			[]Validator{&NotEmptyValidator{}},
+			"Please enter the name of the Queen cube",
+			"Queen Name",
+			"",
+		),
+	)
 
-// TODO: Define a method to read a dialoge tree from a file
-// TODO: Create a dialog tree in a file for the setup dialog
+	form := NewForm(
+		NewMultipleChoiceField(
+			"cubeLocation",
+			[]DisplayCondition{&AlwaysDisplay{}},
+			[]Validator{&ChoiceValidator{}},
+			"Please select the location of the cube",
+			"Cube Location",
+			map[string]Option{
+				"local": {
+					Label:       "Local",
+					Description: "Setup the cube on this device",
+				},
+				"remote": {
+					Label:       "Remote",
+					Description: "Setup the cube on a remote device",
+				},
+			},
+			"local",
+		),
+		NewMultipleChoiceField(
+			"cubeType",
+			[]DisplayCondition{&IsValidDisplayCondition{
+				fieldIds: []string{"cubeLocation"},
+			}},
+			[]Validator{&ChoiceValidator{}},
+			"Please select the type of the cube",
+			"Cube Type",
+			CubeTypes,
+			"",
+		),
+		queenCubeSetupFields,
+	)
+	return form
+}

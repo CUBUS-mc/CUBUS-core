@@ -15,16 +15,13 @@ func init() {
 	bundle = i18n.NewBundle(language.English)
 	bundle.RegisterUnmarshalFunc("toml", toml.Unmarshal)
 
-	// Get the current file's path
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
 		panic("No caller information")
 	}
 
-	// Get the directory of the current file
 	dir := filepath.Dir(filename)
 
-	// Construct the absolute paths to the TOML files
 	enPath := filepath.Join(dir, "locals", "active.en.toml")
 	dePath := filepath.Join(dir, "locals", "active.de.toml")
 

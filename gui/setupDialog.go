@@ -2,7 +2,7 @@ package gui
 
 import (
 	"CUBUS-core/shared"
-	"CUBUS-core/translation"
+	"CUBUS-core/shared/translation"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"

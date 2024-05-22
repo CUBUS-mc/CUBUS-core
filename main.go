@@ -3,7 +3,7 @@ package main
 import (
 	"CUBUS-core/gui"
 	"CUBUS-core/shared"
-	"CUBUS-core/translation"
+	"CUBUS-core/shared/translation"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 )
@@ -20,7 +20,7 @@ func main() {
 
 	switch ui {
 	case shared.CLI:
-		println(T("CLI not implemented yet"))
+		println(T("CLI not implemented yet")) // Implement CLI with https://charm.sh/
 	case shared.GUI:
 		gui.Gui(cubusApp, defaultValues)
 	case shared.API:

@@ -55,6 +55,6 @@ def warn_unused_translations(existing_strings, extracted_strings):
         logging.warning(f"Unused translation: {unused}")
 
 logging.basicConfig(level=logging.INFO)
-existing_strings = load_existing_strings('./translation/locals')
+existing_strings = load_existing_strings('./shared/translation/locals')
 extracted_strings = extract_strings_from_go_files('./', existing_strings)
-write_strings_to_toml(extracted_strings, './translation/locals')
+write_strings_to_toml(extracted_strings, './shared/translation/locals')
