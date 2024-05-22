@@ -294,6 +294,16 @@ type FieldGroup struct {
 	Fields []Field
 }
 
+func (f *FieldGroup) GetFieldsToDisplay() []Field {
+	var fieldsToDisplay []Field
+	for _, field := range f.Fields {
+		if field.ShouldDisplay() {
+			fieldsToDisplay = append(fieldsToDisplay, field)
+		}
+	}
+	return fieldsToDisplay
+}
+
 // Defining the Form Type
 
 type Form struct {
@@ -346,7 +356,18 @@ func (f *Form) SetOnChangeCallback(onChange func()) {
 func NewForm(fields ...Field) *Form {
 	form := &Form{Fields: fields, onChange: func() {}}
 	for _, field := range fields {
-		field.(*FieldBaseType).form = form
+		switch v := field.(type) {
+		case *FieldBaseType:
+			v.form = form
+		case *TextField:
+			v.FieldBaseType.form = form
+		case *NumberField:
+			v.TextField.FieldBaseType.form = form
+		case *MultipleChoiceField:
+			v.TextField.FieldBaseType.form = form
+		case *FieldGroup:
+			v.FieldBaseType.form = form
+		}
 	}
 	return form
 }

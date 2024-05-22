@@ -1,45 +1,30 @@
 package gui
 
 import (
-	"CUBUS-core/shared"
+	"CUBUS-core/shared/forms"
 	"CUBUS-core/shared/translation"
+	"CUBUS-core/shared/types"
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/widget"
+	"fyne.io/fyne/v2/layout"
 	"github.com/google/uuid"
 )
 
-func setupDialog(window fyne.Window) shared.CubeConfigType { // TODO: use the shared dialog tree to create the setup dialog form and return the cube config
+func setupDialog(window fyne.Window) types.CubeConfig { // TODO: add a on change listener that puts the values into the cubeConfig
 	T := translation.T
 
-	cubeConfig := shared.CubeConfigType{
+	cubeConfig := types.CubeConfig{
 		Id:        uuid.New().String(),
-		CubeType:  shared.CubeTypes["generic-worker"],
+		CubeType:  types.CubeTypes.GenericWorker,
 		PublicKey: nil,
 	}
 
-	cubeTypeLabels := make([]string, len(shared.CubeTypes))
-	counter := 0
-	for _, cubeType := range shared.CubeTypes {
-		cubeTypeLabels[counter] = cubeType.Label
-		counter++
-	}
+	cubeSetupForm := forms.GetCubeSetupForm()
+	box := container.New(layout.NewVBoxLayout())
+	forms.FormToFyneForm(cubeSetupForm, box)
 
-	locationItem := widget.NewSelect([]string{T("Local"), T("Remote")}, func(string) {})
-	typeItem := widget.NewSelect(cubeTypeLabels, func(string) {})
-	publicKeyItem := widget.NewMultiLineEntry()
-
-	form := &widget.Form{
-		Items: []*widget.FormItem{
-			{Text: T("Location"), Widget: locationItem},
-			{Text: T("Type"), Widget: typeItem},
-			{Text: T("Public Key"), Widget: publicKeyItem},
-		},
-		OnSubmit: func() {
-		},
-	}
-
-	dialog.NewCustom(T("Setup"), "OK", form, window).Show()
+	dialog.NewCustom(T("Setup"), "OK", box, window).Show()
 
 	return cubeConfig
 }

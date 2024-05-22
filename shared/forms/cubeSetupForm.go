@@ -39,7 +39,7 @@ var CubeTypes = map[string]Option{
 	},
 }
 
-func getCubeSetupForm() *Form {
+func GetCubeSetupForm() *Form {
 	queenCubeSetupFields := NewFieldGroup(
 		"queenCubeSetup",
 		[]DisplayCondition{&HasValueDisplayCondition{fieldId: "cubeType", value: "queen"}},
