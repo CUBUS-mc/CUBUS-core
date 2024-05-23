@@ -51,6 +51,9 @@ func (f *FieldBaseType) ShouldDisplay() bool {
 }
 
 func (f *FieldBaseType) IsValid() bool {
+	if !f.ShouldDisplay() {
+		return true
+	}
 	for _, validator := range f.Validators {
 		if !validator.Validate(f) {
 			return false
@@ -93,8 +96,16 @@ func (v *AllFieldsValid) Validate(field any) bool {
 	fields := field.(*FieldBaseType).form.Fields
 	for _, f := range fields {
 		if !f.IsValid() {
-			field.(*FieldBaseType).error = &types.CustomError{Message: "Not all fields are valid"}
+			field.(*FieldBaseType).error = &types.CustomError{Message: "Not all fields are valid (invalid field: " + f.GetId() + ")"}
 			return false
+		}
+		if group, ok := f.(*FieldGroup); ok {
+			for _, subField := range group.Fields {
+				if !subField.IsValid() {
+					field.(*FieldBaseType).error = &types.CustomError{Message: "Not all fields are valid (invalid field: " + subField.GetId() + " in group " + group.GetId() + ")"}
+					return false
+				}
+			}
 		}
 	}
 	return true
@@ -105,12 +116,20 @@ type IsValidValidator struct {
 }
 
 func (v *IsValidValidator) Validate(field any) bool {
-	fields := field.(*FieldBaseType).form.Fields
+	fields := field.(*FieldBaseType).form.GetFieldsToDisplay()
 	for _, f := range fields {
 		for _, id := range v.fieldIds {
 			if f.GetId() == id && !f.IsValid() {
-				field.(*FieldBaseType).error = &types.CustomError{Message: "Not all fields that should be valid are valid"}
+				field.(*FieldBaseType).error = &types.CustomError{Message: "Not all fields that should be valid are valid (invalid field: " + f.GetId() + ")"}
 				return false
+			}
+			if group, ok := f.(*FieldGroup); ok {
+				for _, subField := range group.Fields {
+					if !subField.IsValid() && subField.GetId() == id {
+						field.(*FieldBaseType).error = &types.CustomError{Message: "Not all fields that should be valid are valid (invalid field: " + subField.GetId() + " in group " + group.GetId() + ")"}
+						return false
+					}
+				}
 			}
 		}
 	}
@@ -362,6 +381,9 @@ func (m *MultipleChoiceField) GetOptions() map[string]Option {
 }
 
 func (m *MultipleChoiceField) IsValid() bool {
+	if !m.ShouldDisplay() {
+		return true
+	}
 	for _, validator := range m.Validators {
 		if !validator.Validate(m) {
 			return false
@@ -386,6 +408,15 @@ func (f *FieldGroup) GetFieldsToDisplay() []Field {
 		}
 	}
 	return fieldsToDisplay
+}
+
+func (f *FieldGroup) GetFieldById(id string) Field {
+	for _, field := range f.Fields {
+		if field.GetId() == id {
+			return field
+		}
+	}
+	return nil
 }
 
 // Defining the Form Type
