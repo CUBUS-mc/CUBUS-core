@@ -94,19 +94,11 @@ func (v *CustomValidator) Validate(field any) bool {
 type AllFieldsValid struct{}
 
 func (v *AllFieldsValid) Validate(field any) bool {
-	fields := field.(*FieldBaseType).form.Fields
+	fields := field.(*FieldBaseType).form.GetAllFields()
 	for _, f := range fields {
 		if !f.IsValid() {
 			field.(*FieldBaseType).error = &types.CustomError{Message: "Not all fields are valid (invalid field: " + f.GetId() + ")"}
 			return false
-		}
-		if group, ok := f.(*FieldGroup); ok {
-			for _, subField := range group.Fields {
-				if !subField.IsValid() {
-					field.(*FieldBaseType).error = &types.CustomError{Message: "Not all fields are valid (invalid field: " + subField.GetId() + " in group " + group.GetId() + ")"}
-					return false
-				}
-			}
 		}
 	}
 	return true
@@ -117,20 +109,12 @@ type IsValidValidator struct {
 }
 
 func (v *IsValidValidator) Validate(field any) bool {
-	fields := field.(*FieldBaseType).form.GetFieldsToDisplay()
+	fields := field.(*FieldBaseType).form.GetAllFields()
 	for _, f := range fields {
 		for _, id := range v.fieldIds {
 			if f.GetId() == id && !f.IsValid() {
 				field.(*FieldBaseType).error = &types.CustomError{Message: "Not all fields that should be valid are valid (invalid field: " + f.GetId() + ")"}
 				return false
-			}
-			if group, ok := f.(*FieldGroup); ok {
-				for _, subField := range group.Fields {
-					if !subField.IsValid() && subField.GetId() == id {
-						field.(*FieldBaseType).error = &types.CustomError{Message: "Not all fields that should be valid are valid (invalid field: " + subField.GetId() + " in group " + group.GetId() + ")"}
-						return false
-					}
-				}
 			}
 		}
 	}
@@ -156,7 +140,7 @@ type IsValidDisplayCondition struct {
 }
 
 func (d *IsValidDisplayCondition) DisplayCondition(field any) bool {
-	fields := field.(*FieldBaseType).form.Fields
+	fields := field.(*FieldBaseType).form.GetAllFields()
 	for _, f := range fields {
 		for _, id := range d.fieldIds {
 			if f.GetId() == id && !f.IsValid() {
@@ -172,7 +156,7 @@ type IsInvalidDisplayCondition struct {
 }
 
 func (d *IsInvalidDisplayCondition) DisplayCondition(field any) bool {
-	fields := field.(*FieldBaseType).form.Fields
+	fields := field.(*FieldBaseType).form.GetAllFields()
 	for _, f := range fields {
 		for _, id := range d.fieldIds {
 			if f.GetId() == id && f.IsValid() {
@@ -186,7 +170,7 @@ func (d *IsInvalidDisplayCondition) DisplayCondition(field any) bool {
 type AllFieldsValidDisplayCondition struct{}
 
 func (d *AllFieldsValidDisplayCondition) DisplayCondition(field any) bool {
-	fields := field.(*FieldBaseType).form.Fields
+	fields := field.(*FieldBaseType).form.GetAllFields()
 	for _, f := range fields {
 		if !f.IsValid() {
 			return false
@@ -201,10 +185,25 @@ type HasValueDisplayCondition struct {
 }
 
 func (d *HasValueDisplayCondition) DisplayCondition(field any) bool {
-	fields := field.(*FieldBaseType).form.Fields
+	fields := field.(*FieldBaseType).form.GetAllFields()
 	for _, f := range fields {
 		if f.GetId() == d.fieldId && f.GetValue() == d.value {
 			return true
+		}
+	}
+	return false
+
+}
+
+type DisplayAfter struct {
+	fieldId string
+}
+
+func (d *DisplayAfter) DisplayCondition(field any) bool {
+	fields := field.(*FieldBaseType).form.GetAllFields()
+	for _, f := range fields {
+		if f.GetId() == d.fieldId {
+			return f.IsValid() && f.ShouldDisplay()
 		}
 	}
 	return false
@@ -456,6 +455,17 @@ type Form struct {
 	onChange func()
 }
 
+func (f *Form) GetAllFields() []Field {
+	fields := make([]Field, 0)
+	for _, field := range f.Fields {
+		fields = append(fields, field)
+		if group, ok := field.(*FieldGroup); ok {
+			fields = append(fields, group.Fields...)
+		}
+	}
+	return fields
+}
+
 func (f *Form) IsValid() bool {
 	for _, field := range f.Fields {
 		if !field.IsValid() {
@@ -542,6 +552,6 @@ func NewMultipleChoiceField(id string, displayConditions []DisplayCondition, val
 	return &MultipleChoiceField{TextField: &TextField{FieldBaseType: &FieldBaseType{Id: id, DisplayConditions: displayConditions, Validators: validators, Value: defaultValue}, Placeholder: placeholder, Prompt: prompt}, Options: options}
 }
 
-func NewMessage(id string, displayConditions []DisplayCondition, validators []Validator, message string) *Message {
-	return &Message{FieldBaseType: &FieldBaseType{Id: id, DisplayConditions: displayConditions, Validators: validators, Value: message}}
+func NewMessage(id string, displayConditions []DisplayCondition, message string) *Message {
+	return &Message{FieldBaseType: &FieldBaseType{Id: id, DisplayConditions: displayConditions, Validators: []Validator{}, Value: message}}
 }

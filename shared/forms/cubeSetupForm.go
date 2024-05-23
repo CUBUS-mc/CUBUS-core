@@ -47,13 +47,10 @@ func GetCubeSetupForm() *Form {
 		[]DisplayCondition{&HasValueDisplayCondition{fieldId: "cubeType", value: "queen"}},
 		[]Validator{&IsValidValidator{fieldIds: []string{"queenName"}}},
 		"",
-		NewTextField(
-			"queenName",
+		NewMessage(
+			"queenCubeSetupMessage",
 			[]DisplayCondition{&AlwaysDisplay{}},
-			[]Validator{&NotEmptyValidator{}},
-			"Please enter the name of the Queen cube",
-			"Queen Name",
-			"",
+			"CUBUS Queen setup placeholder",
 		),
 	)
 
@@ -76,11 +73,17 @@ func GetCubeSetupForm() *Form {
 			},
 			"",
 		),
+		NewTextField(
+			"cubeName",
+			[]DisplayCondition{&DisplayAfter{fieldId: "cubeLocation"}},
+			[]Validator{&NotEmptyValidator{}},
+			"Please enter the name of the cube",
+			"Cube Name",
+			"",
+		),
 		NewMultipleChoiceField(
 			"cubeType",
-			[]DisplayCondition{&IsValidDisplayCondition{
-				fieldIds: []string{"cubeLocation"},
-			}},
+			[]DisplayCondition{&DisplayAfter{fieldId: "cubeName"}},
 			[]Validator{&ChoiceValidator{}},
 			"Please select the type of the cube",
 			"Cube Type",
