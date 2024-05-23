@@ -69,8 +69,8 @@ func fieldsToFyneForm(fields []Field, form *Form, box *fyne.Container, fyneForm 
 			}
 			formItems = append(formItems, widget.NewFormItem(field.GetPrompt(), entry))
 		case *FieldGroup:
-			if field.GetValue() != "" {
-				formItems = append(formItems, widget.NewFormItem(field.GetValue(), widget.NewLabel("")))
+			if field.GetHeading() != "" {
+				formItems = append(formItems, widget.NewFormItem(field.GetHeading(), widget.NewLabel("")))
 			}
 			formItems = append(formItems, fieldsToFyneForm(field.GetFieldsToDisplay(), form, box, fyneForm)...)
 		default:
@@ -80,12 +80,13 @@ func fieldsToFyneForm(fields []Field, form *Form, box *fyne.Container, fyneForm 
 	return formItems
 }
 
-func FormToFyneForm(form *Form, box *fyne.Container, parentDialog *dialog.CustomDialog, window fyne.Window) {
+func FormToFyneForm(form *Form, box *fyne.Container, parentDialog *dialog.CustomDialog, window fyne.Window, onSubmit func(map[string]string)) {
 	fields := form.GetFieldsToDisplay()
 	fyneForm := widget.NewForm()
 	fyneForm.Items = fieldsToFyneForm(fields, form, box, fyneForm)
 	fyneForm.OnSubmit = func() {
 		if form.IsValid() {
+			onSubmit(form.GetFieldValues())
 			parentDialog.Hide()
 		} else {
 			dialog.ShowError(form.GetError(), window)

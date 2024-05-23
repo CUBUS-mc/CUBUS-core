@@ -2,6 +2,7 @@ package forms
 
 import (
 	"CUBUS-core/shared/types"
+	"encoding/json"
 	"net"
 	"regexp"
 	"strconv"
@@ -397,7 +398,8 @@ func (m *MultipleChoiceField) IsValid() bool {
 
 type FieldGroup struct {
 	*FieldBaseType
-	Fields []Field
+	Fields  []Field
+	heading string
 }
 
 func (f *FieldGroup) GetFieldsToDisplay() []Field {
@@ -417,6 +419,34 @@ func (f *FieldGroup) GetFieldById(id string) Field {
 		}
 	}
 	return nil
+}
+
+func (f *FieldGroup) GetValue() string {
+	fieldValues := make(map[string]string)
+	for _, field := range f.Fields {
+		fieldValues[field.GetId()] = field.GetValue()
+	}
+	jsonFieldValues, _ := json.Marshal(fieldValues)
+	return string(jsonFieldValues)
+}
+
+func (f *FieldGroup) GetHeading() string {
+	return f.heading
+}
+
+func (f *FieldGroup) SetValue(value string) {
+	var fieldValues map[string]string
+	err := json.Unmarshal([]byte(value), &fieldValues)
+	if err != nil {
+		return
+	}
+	for _, field := range f.Fields {
+		field.SetValue(fieldValues[field.GetId()])
+	}
+}
+
+func (f *FieldGroup) SetHeading(heading string) {
+	f.heading = heading
 }
 
 // Defining the Form Type
@@ -497,7 +527,7 @@ func NewForm(fields ...Field) *Form {
 }
 
 func NewFieldGroup(id string, displayConditions []DisplayCondition, validators []Validator, heading string, fields ...Field) *FieldGroup {
-	return &FieldGroup{FieldBaseType: &FieldBaseType{Id: id, DisplayConditions: displayConditions, Validators: validators, Value: heading}, Fields: fields}
+	return &FieldGroup{FieldBaseType: &FieldBaseType{Id: id, DisplayConditions: displayConditions, Validators: validators}, Fields: fields, heading: heading}
 }
 
 func NewTextField(id string, displayConditions []DisplayCondition, validators []Validator, placeholder string, prompt string, defaultValue string) *TextField {
