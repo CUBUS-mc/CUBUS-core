@@ -35,3 +35,11 @@ type CubeConfig struct {
 	CubeType  CubeType
 	PublicKey crypto.PublicKey
 }
+
+type CustomError struct {
+	Message string
+}
+
+func (e *CustomError) Error() string {
+	return e.Message
+}

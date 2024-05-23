@@ -1,11 +1,13 @@
 package forms
 
 import (
+	"CUBUS-core/shared/types"
 	"net"
+	"regexp"
 	"strconv"
 )
 
-// TODO: Fix all validators to use field any instead of value string
+// TODO: Add translations for the error messages
 
 type Field interface {
 	GetId() string
@@ -13,6 +15,7 @@ type Field interface {
 	IsValid() bool
 	GetValue() string
 	SetValue(value string)
+	GetError() error
 }
 
 type Validator interface {
@@ -31,6 +34,7 @@ type FieldBaseType struct {
 	Validators        []Validator
 	Value             string
 	form              *Form
+	error             error
 }
 
 func (f *FieldBaseType) GetId() string {
@@ -52,6 +56,7 @@ func (f *FieldBaseType) IsValid() bool {
 			return false
 		}
 	}
+	f.error = nil
 	return true
 }
 
@@ -66,12 +71,20 @@ func (f *FieldBaseType) SetValue(value string) {
 	}
 }
 
+func (f *FieldBaseType) GetError() error {
+	return f.error
+}
+
 type CustomValidator struct {
-	Validator func(field any) bool
+	Validator func(field any) (bool, error)
 }
 
 func (v *CustomValidator) Validate(field any) bool {
-	return v.Validator(field)
+	valid, err := v.Validator(field)
+	if err != nil {
+		field.(*FieldBaseType).error = err
+	}
+	return valid
 }
 
 type AllFieldsValid struct{}
@@ -80,6 +93,7 @@ func (v *AllFieldsValid) Validate(field any) bool {
 	fields := field.(*FieldBaseType).form.Fields
 	for _, f := range fields {
 		if !f.IsValid() {
+			field.(*FieldBaseType).error = &types.CustomError{Message: "Not all fields are valid"}
 			return false
 		}
 	}
@@ -95,6 +109,7 @@ func (v *IsValidValidator) Validate(field any) bool {
 	for _, f := range fields {
 		for _, id := range v.fieldIds {
 			if f.GetId() == id && !f.IsValid() {
+				field.(*FieldBaseType).error = &types.CustomError{Message: "Not all fields that should be valid are valid"}
 				return false
 			}
 		}
@@ -193,30 +208,65 @@ type TextField struct {
 type NotEmptyValidator struct{}
 
 func (v *NotEmptyValidator) Validate(field any) bool {
-	value := field.(*TextField).Value
-	return value != ""
+	value := field.(*FieldBaseType).Value
+	valid := value != ""
+	if !valid {
+		field.(*FieldBaseType).error = &types.CustomError{Message: "Field cannot be empty"}
+	}
+	return valid
 }
 
 type MaxLengthValidator struct {
 	MaxLength int
 }
 
-func (v *MaxLengthValidator) Validate(value string) bool {
-	return len(value) <= v.MaxLength
+func (v *MaxLengthValidator) Validate(field any) bool {
+	value := field.(*FieldBaseType).Value
+	valid := len(value) <= v.MaxLength
+	if !valid {
+		field.(*FieldBaseType).error = &types.CustomError{Message: "Field is too long (length: " + strconv.Itoa(len(value)) + ", max length: " + strconv.Itoa(v.MaxLength) + ")"}
+	}
+	return valid
 }
 
 type MinLengthValidator struct {
 	MinLength int
 }
 
-func (v *MinLengthValidator) Validate(value string) bool {
-	return v.MinLength <= len(value)
+func (v *MinLengthValidator) Validate(field any) bool {
+	value := field.(*FieldBaseType).Value
+	valid := len(value) >= v.MinLength
+	if !valid {
+		field.(*FieldBaseType).error = &types.CustomError{Message: "Field is too short (length: " + strconv.Itoa(len(value)) + ", min length: " + strconv.Itoa(v.MinLength) + ")"}
+	}
+	return valid
 }
 
 type IpValidator struct{}
 
-func (v *IpValidator) Validate(field *TextField) bool {
-	return net.ParseIP(field.Value) != nil
+func (v *IpValidator) Validate(field any) bool {
+	value := field.(*FieldBaseType).Value
+	valid := net.ParseIP(value) != nil
+	if !valid {
+		field.(*FieldBaseType).error = &types.CustomError{Message: "Field is not a valid IP address"}
+	}
+	return valid
+}
+
+type RegexValidator struct {
+	RegexPattern string
+}
+
+func (v *RegexValidator) Validate(field any) bool {
+	value := field.(*FieldBaseType).Value
+	valid := true
+	if value != "" {
+		valid = regexp.MustCompile(v.RegexPattern).MatchString(value)
+	}
+	if !valid {
+		field.(*FieldBaseType).error = &types.CustomError{Message: "Field does not match the required pattern (" + v.RegexPattern + ")"}
+	}
+	return valid
 }
 
 func (t *TextField) GetPlaceholder() string {
@@ -237,30 +287,46 @@ type MinValidator struct {
 	Min int
 }
 
-func (v *MinValidator) Validate(field *NumberField) bool {
-	valueAsInt, err := strconv.Atoi(field.Value)
+func (v *MinValidator) Validate(field any) bool {
+	value := field.(*FieldBaseType).Value
+	valueAsInt, err := strconv.Atoi(value)
 	if err != nil {
+		field.(*FieldBaseType).error = &types.CustomError{Message: "Field value is not a integer"}
 		return false
 	}
-	return v.Min <= valueAsInt
+	valid := v.Min <= valueAsInt
+	if !valid {
+		field.(*FieldBaseType).error = &types.CustomError{Message: "Field value is too small (value: " + value + ", min value: " + strconv.Itoa(v.Min) + ")"}
+	}
+	return valid
 }
 
 type MaxValidator struct {
 	Max int
 }
 
-func (v *MaxValidator) Validate(field *NumberField) bool {
-	valueAsInt, err := strconv.Atoi(field.Value)
+func (v *MaxValidator) Validate(field any) bool {
+	value := field.(*FieldBaseType).Value
+	valueAsInt, err := strconv.Atoi(value)
 	if err != nil {
+		field.(*FieldBaseType).error = &types.CustomError{Message: "Field value is not a integer"}
 		return false
+	}
+	valid := valueAsInt <= v.Max
+	if !valid {
+		field.(*FieldBaseType).error = &types.CustomError{Message: "Field value is too big (value: " + value + ", max value: " + strconv.Itoa(v.Max) + ")"}
 	}
 	return valueAsInt <= v.Max
 }
 
 type IsIntegerValidator struct{}
 
-func (v *IsIntegerValidator) Validate(field *NumberField) bool {
-	_, err := strconv.Atoi(field.Value)
+func (v *IsIntegerValidator) Validate(field any) bool {
+	value := field.(*FieldBaseType).Value
+	_, err := strconv.Atoi(value)
+	if err != nil {
+		field.(*FieldBaseType).error = &types.CustomError{Message: "Field value is not a integer"}
+	}
 	return err == nil
 }
 
@@ -281,10 +347,28 @@ type ChoiceValidator struct{}
 func (v *ChoiceValidator) Validate(field any) bool {
 	multipleChoiceField, ok := field.(*MultipleChoiceField)
 	if !ok {
+		multipleChoiceField.error = &types.CustomError{Message: "Field is not a multiple choice field but ChoiceValidator was used"}
 		return false
 	}
 	_, ok = multipleChoiceField.Options[multipleChoiceField.Value]
+	if !ok {
+		multipleChoiceField.error = &types.CustomError{Message: "Field value is not a valid option"}
+	}
 	return ok
+}
+
+func (m *MultipleChoiceField) GetOptions() map[string]Option {
+	return m.Options
+}
+
+func (m *MultipleChoiceField) IsValid() bool {
+	for _, validator := range m.Validators {
+		if !validator.Validate(m) {
+			return false
+		}
+	}
+	m.error = nil
+	return true
 }
 
 // Defining the Field Group Type based on the Base Field Type
@@ -349,6 +433,15 @@ func (f *Form) GetFieldValues() map[string]string {
 
 func (f *Form) SetOnChangeCallback(onChange func()) {
 	f.onChange = onChange
+}
+
+func (f *Form) GetError() error {
+	for _, field := range f.Fields {
+		if !field.IsValid() {
+			return &types.CustomError{Message: field.GetId() + " is not valid (" + field.GetError().Error() + ")"}
+		}
+	}
+	return nil
 }
 
 // Defining the Form Builder Functions

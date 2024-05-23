@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func setupDialog(window fyne.Window) types.CubeConfig { // TODO: add a on change listener that puts the values into the cubeConfig
+func setupDialog(window fyne.Window) types.CubeConfig { // TODO: use onSubmit of form to get form data and return it
 	T := translation.T
 
 	cubeConfig := types.CubeConfig{
@@ -22,9 +22,11 @@ func setupDialog(window fyne.Window) types.CubeConfig { // TODO: add a on change
 
 	cubeSetupForm := forms.GetCubeSetupForm()
 	box := container.New(layout.NewVBoxLayout())
-	forms.FormToFyneForm(cubeSetupForm, box)
 
-	dialog.NewCustom(T("Setup"), "OK", box, window).Show()
+	formPopup := dialog.NewCustomWithoutButtons(T("Setup"), box, window)
+	formPopup.Resize(fyne.NewSize(700, 400))
+	forms.FormToFyneForm(cubeSetupForm, box, formPopup, window)
+	formPopup.Show()
 
 	return cubeConfig
 }

@@ -1,5 +1,7 @@
 package forms
 
+// TODO: Add translations
+
 var CubeTypes = map[string]Option{
 	"queen": {
 		Label:       "Queen",
@@ -44,7 +46,7 @@ func GetCubeSetupForm() *Form {
 		"queenCubeSetup",
 		[]DisplayCondition{&HasValueDisplayCondition{fieldId: "cubeType", value: "queen"}},
 		[]Validator{&IsValidValidator{fieldIds: []string{"queenName"}}},
-		"Queen Cube Setup",
+		"",
 		NewTextField(
 			"queenName",
 			[]DisplayCondition{&AlwaysDisplay{}},
@@ -72,7 +74,7 @@ func GetCubeSetupForm() *Form {
 					Description: "Setup the cube on a remote device",
 				},
 			},
-			"local",
+			"",
 		),
 		NewMultipleChoiceField(
 			"cubeType",
