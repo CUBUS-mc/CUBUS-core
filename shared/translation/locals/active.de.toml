@@ -87,3 +87,81 @@ other = "Feld ist zu kurz (Länge: "
 
 [" is not valid ("]
 other = " ist nicht gültig ("
+
+["The Queen is the central cube in the CUBUS network. It is the C2 server. There can only be one Queen in a CUBUS subnet."]
+other = "Die Queen ist der zentrale Cube im CUBUS-Netzwerk. Es ist der C2-Server. Es kann nur eine Queen in einem CUBUS-Subnetz geben."
+
+["CUBUS Mod"]
+other = "CUBUS Mod"
+
+["The API cube is responsible for providing an API for the CUBUS network."]
+other = "Der API-Cube ist dafür verantwortlich, eine API für das CUBUS-Netzwerk bereitzustellen."
+
+["Please enter the name of the cube"]
+other = "Bitte geben Sie den Namen des Cubes ein"
+
+[API]
+other = "API"
+
+[Web]
+other = "Web"
+
+["Discord Bot"]
+other = "Discord Bot"
+
+["The Security cube is responsible for the security of the CUBUS network."]
+other = "Der Security-Cube ist für die Sicherheit des CUBUS-Netzwerks verantwortlich."
+
+["Cube Name"]
+other = "Cube Name"
+
+[Security]
+other = "Security"
+
+["The Discord Bot cube is responsible for providing a Discord bot for the CUBUS network."]
+other = "Der Discord-Bot-Cube ist dafür verantwortlich, einen Discord-Bot für das CUBUS-Netzwerk bereitzustellen."
+
+["The Drone cubes are responsible for scanning, modifying and providing a proxy for the CUBUS network."]
+other = "Die Drone-Cubes sind dafür verantwortlich, zu scannen, zu modifizieren und einen Proxy bereitzustellen."
+
+["This is a special cube that runs in a Minecraft mod."]
+other = "Dies ist ein spezieller Cube, der in einem Minecraft-Mod läuft."
+
+["Setup the cube on this device"]
+other = "Richten Sie den Cube auf diesem Gerät ein"
+
+["Setup the cube on a remote device"]
+other = "Richten Sie den Cube auf einem remote Gerät ein"
+
+["Please select the type of the cube"]
+other = "Bitte wählen Sie den Typ des Cubes"
+
+["The Web cube is responsible for providing a web interface for the CUBUS network."]
+other = "Der Web-Cube ist dafür verantwortlich, eine Web-Schnittstelle für das CUBUS-Netzwerk bereitzustellen."
+
+[Database]
+other = "Database"
+
+["The Database cube is responsible for storing data for the CUBUS network."]
+other = "Der Database-Cube ist dafür verantwortlich, Daten für das CUBUS-Netzwerk zu speichern."
+
+[Queen]
+other = "Queen"
+
+["Please select the location of the cube"]
+other = "Bitte wählen Sie den Ort des Cubes"
+
+[Drone]
+other = "Drone"
+
+["Generic Worker"]
+other = "Genereischer Arbeiter-Cube"
+
+["Cube Type"]
+other = "Cube Type"
+
+["The Generic Worker cube is a generic cube that can be used for any purpose by any other cube."]
+other = "Der generische Arbeiter-Cube ist ein generischer Cube, der von jedem anderen Cube für jeden Zweck verwendet werden kann."
+
+["Cube Location"]
+other = "Cube Ort"
