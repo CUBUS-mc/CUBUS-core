@@ -36,6 +36,12 @@ func selectCube(c *gui.Cube, infoContainerShape *canvas.Rectangle, pointerLine *
 					ColorName: theme.ColorNameBackground,
 				},
 			},
+			&widget.TextSegment{
+				Text: "Cube Type: " + c.Config.CubeType.Value + "\n",
+				Style: widget.RichTextStyle{
+					ColorName: theme.ColorNameBackground,
+				},
+			},
 		}
 		infoContainerText.Refresh()
 		canvas.NewPositionAnimation(
