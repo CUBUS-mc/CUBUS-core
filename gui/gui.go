@@ -15,8 +15,6 @@ import (
 )
 
 func selectCube(c *gui.Cube, infoContainerShape *canvas.Rectangle, pointerLine *canvas.Line, pointerTip *canvas.Circle, infoContainerText *widget.RichText) {
-	println(c.X)
-	println(c.Y)
 	go func() {
 		infoContainerText.Segments = []widget.RichTextSegment{ // TODO: Show all info about the cube and add a button to delete or edit the cube
 			&widget.TextSegment{

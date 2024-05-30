@@ -6,7 +6,6 @@ import (
 	"CUBUS-core/shared/translation"
 	"CUBUS-core/shared/types"
 	"CUBUS-core/shared/types/gui"
-	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -53,7 +52,6 @@ func setupDialog(
 		infoContainerText *widget.RichText,
 	) {
 		for key, value := range values {
-			fmt.Printf("%s: %s \n", key, value)
 			switch key {
 			case "cubeName":
 				cubeConfig.CubeName = value
