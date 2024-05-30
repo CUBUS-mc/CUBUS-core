@@ -5,12 +5,16 @@ import (
 	"CUBUS-core/shared/translation"
 	"CUBUS-core/shared/types"
 	"CUBUS-core/shared/types/gui"
+	"encoding/json"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"image/color"
+	"io"
+	"log"
 	"time"
 )
 
@@ -146,11 +150,73 @@ func Gui(cubusApp fyne.App, defaults *shared.Defaults) {
 					infoContainerText,
 				)
 			}),
-			fyne.NewMenuItem(T("Export config"), func() {
-				println("Export config") // TODO: implement config export
+			fyne.NewMenuItem(T("Export cube configs"), func() {
+				saveDialog := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
+					if err != nil {
+						log.Println("Error exporting config:", err)
+						return
+					}
+					jsonData, err := json.Marshal(cubeConfigs)
+					if err != nil {
+						log.Println("Error exporting config:", err)
+						return
+					}
+					_, err = writer.Write(jsonData)
+					if err != nil {
+						log.Println("Error writing config file:", err)
+					}
+					err = writer.Close()
+					if err != nil {
+						return
+					}
+				}, cubusWindow)
+				saveDialog.SetFileName("config.json")
+				saveDialog.Show()
 			}),
-			fyne.NewMenuItem(T("Import config"), func() {
-				println("Import config") // TODO: implement config import
+			fyne.NewMenuItem(T("Import cube configs"), func() {
+				openDialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
+					if err != nil {
+						log.Println("Error importing config:", err)
+						return
+					}
+					jsonData, err := io.ReadAll(reader)
+					if err != nil {
+						log.Println("Error reading config file:", err)
+						return
+					}
+					var importedConfigs []map[string]interface{}
+					err = json.Unmarshal(jsonData, &importedConfigs)
+					if err != nil {
+						log.Println("Error parsing config file:", err)
+						return
+					}
+					cubeStrings := make([]string, len(importedConfigs))
+					for i, config := range importedConfigs {
+						cubeStrings[i] = shared.ObjectToJsonString(config)
+					}
+					cubusApp.Preferences().SetStringList("cubes", cubeStrings)
+
+					// Clear the current cubes from the cubeContainerObject
+					cubeContainerObject.ClearCubes()
+
+					// Add the imported cubes to the cubeContainerObject
+					for _, cubeConfig := range importedConfigs {
+						cubeConfigAsCorrectType := types.CubeConfig{
+							Id:        cubeConfig["id"].(string),
+							CubeType:  types.CubeType{Value: cubeConfig["type"].(string)},
+							CubeName:  cubeConfig["name"].(string),
+							PublicKey: nil,
+						}
+						cubeContainerObject.AddCube(defaults.CubeAssetURL, func(c *gui.Cube) { selectCube(c, infoContainerShape, pointerLine, pointerTip, infoContainerText) }, cubeConfig["id"].(string), cubeConfigAsCorrectType)
+					}
+					cubeContainerObject.CenterCubes()
+
+					err = reader.Close()
+					if err != nil {
+						return
+					}
+				}, cubusWindow)
+				openDialog.Show()
 			}),
 			fyne.NewMenuItem(T("Settings"), func() {
 				println("Settings") // TODO: implement settings (e.g. change the language)

@@ -101,6 +101,12 @@ func (cc *CubeContainer) CenterCubes() {
 	cc.MoveContainer(cc.X+deltaX, cc.Y+deltaY)
 }
 
+func (cc *CubeContainer) ClearCubes() {
+	cc.Container.Objects = []fyne.CanvasObject{}
+	cc.NCubes = 0
+	cc.Selected = nil
+}
+
 var sem = semaphore.NewWeighted(1)
 
 func newCube(textureUrl string, selectCallback func(c *Cube), id string, x float32, y float32, cubeConfig types.CubeConfig) *Cube {

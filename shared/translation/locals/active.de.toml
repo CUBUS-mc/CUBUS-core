@@ -10,11 +10,11 @@ other = "Hallo, Welt!"
 [Settings]
 other = "Einstellungen"
 
-["Export config"]
-other = "Konfiguration exportieren"
+["Export cube configs"]
+other = "Cube konfigurationen exportieren"
 
-["Import config"]
-other = "Konfiguration importieren"
+["Import cube configs"]
+other = "Cube konfigurationen importieren"
 
 [File]
 other = "Datei"
