@@ -56,8 +56,14 @@ func (cc *CubeContainer) ChangeSelected(c *Cube, selectCallback func(c *Cube)) {
 }
 
 func (cc *CubeContainer) AddCube(textureUrl string, selectCallback func(c *Cube), id string, cubeConfig types.CubeConfig) { // TODO: Change method so it adds the cubes in a square not a rectangle
+	if math.IsNaN(float64(cc.X)) { // TODO: Fix that there could be nan (this is a problem in the setupDialog method)
+		cc.X = 0
+	}
+	if math.IsNaN(float64(cc.Y)) {
+		cc.Y = 0
+	}
 	xNew := cc.X + (float32(cc.NCubes%5)*cc.IsoDistance - float32(cc.NCubes/5)*cc.IsoDistance)
-	yNew := cc.X + (float32(cc.NCubes/5)*cc.IsoDistance/2 + float32(cc.NCubes%5)*cc.IsoDistance/2) + float32(cc.NCubes)
+	yNew := cc.Y + (float32(cc.NCubes/5)*cc.IsoDistance/2 + float32(cc.NCubes%5)*cc.IsoDistance/2) + float32(cc.NCubes)
 	c := newCube(textureUrl, func(c *Cube) { cc.ChangeSelected(c, selectCallback) }, id, xNew, yNew, cubeConfig)
 	cc.Container.Add(c)
 	cc.NCubes++

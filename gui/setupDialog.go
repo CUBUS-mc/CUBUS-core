@@ -27,7 +27,7 @@ func setupDialog(
 	pointerLine *canvas.Line,
 	pointerTip *canvas.Circle,
 	infoContainerText *widget.RichText,
-) { // TODO: use onSubmit of form to get form data and return it
+) {
 	T := translation.T
 
 	cubeConfig := types.CubeConfig{
@@ -63,8 +63,14 @@ func setupDialog(
 				break
 			}
 		}
-
-		*cubeConfigs = append(*cubeConfigs, map[string]interface{}{"id": cubeConfig.Id, "name": cubeConfig.CubeName, "type": cubeConfig.CubeType.Value})
+		*cubeConfigs = append(
+			*cubeConfigs,
+			map[string]interface{}{
+				"id":   cubeConfig.Id,
+				"name": cubeConfig.CubeName,
+				"type": cubeConfig.CubeType.Value,
+			},
+		)
 		*cubeStrings = []string{}
 		for _, cubeConfig := range *cubeConfigs {
 			*cubeStrings = append(*cubeStrings, shared.ObjectToJsonString(cubeConfig))
