@@ -1,14 +1,13 @@
 package forms
 
 import (
+	"CUBUS-core/shared/translation"
 	"CUBUS-core/shared/types"
 	"encoding/json"
 	"net"
 	"regexp"
 	"strconv"
 )
-
-// TODO: Add translations for the error messages
 
 type Field interface {
 	GetId() string
@@ -97,7 +96,7 @@ func (v *AllFieldsValid) Validate(field any) bool {
 	fields := field.(*FieldBaseType).form.GetAllFields()
 	for _, f := range fields {
 		if !f.IsValid() {
-			field.(*FieldBaseType).error = &types.CustomError{Message: "Not all fields are valid (invalid field: " + f.GetId() + ")"}
+			field.(*FieldBaseType).error = &types.CustomError{Message: translation.T("Not all fields are valid (invalid field: ") + f.GetId() + ")"}
 			return false
 		}
 	}
@@ -113,7 +112,7 @@ func (v *IsValidValidator) Validate(field any) bool {
 	for _, f := range fields {
 		for _, id := range v.fieldIds {
 			if f.GetId() == id && !f.IsValid() {
-				field.(*FieldBaseType).error = &types.CustomError{Message: "Not all fields that should be valid are valid (invalid field: " + f.GetId() + ")"}
+				field.(*FieldBaseType).error = &types.CustomError{Message: translation.T("Not all fields that should be valid are valid (invalid field: ") + f.GetId() + ")"}
 				return false
 			}
 		}
@@ -230,7 +229,7 @@ func (v *NotEmptyValidator) Validate(field any) bool {
 	value := field.(*FieldBaseType).Value
 	valid := value != ""
 	if !valid {
-		field.(*FieldBaseType).error = &types.CustomError{Message: "Field cannot be empty"}
+		field.(*FieldBaseType).error = &types.CustomError{Message: translation.T("Field cannot be empty")}
 	}
 	return valid
 }
@@ -243,7 +242,7 @@ func (v *MaxLengthValidator) Validate(field any) bool {
 	value := field.(*FieldBaseType).Value
 	valid := len(value) <= v.MaxLength
 	if !valid {
-		field.(*FieldBaseType).error = &types.CustomError{Message: "Field is too long (length: " + strconv.Itoa(len(value)) + ", max length: " + strconv.Itoa(v.MaxLength) + ")"}
+		field.(*FieldBaseType).error = &types.CustomError{Message: translation.T("Field is too long (length: ") + strconv.Itoa(len(value)) + translation.T(", max length: ") + strconv.Itoa(v.MaxLength) + ")"}
 	}
 	return valid
 }
@@ -256,7 +255,7 @@ func (v *MinLengthValidator) Validate(field any) bool {
 	value := field.(*FieldBaseType).Value
 	valid := len(value) >= v.MinLength
 	if !valid {
-		field.(*FieldBaseType).error = &types.CustomError{Message: "Field is too short (length: " + strconv.Itoa(len(value)) + ", min length: " + strconv.Itoa(v.MinLength) + ")"}
+		field.(*FieldBaseType).error = &types.CustomError{Message: translation.T("Field is too short (length: ") + strconv.Itoa(len(value)) + translation.T(", min length: ") + strconv.Itoa(v.MinLength) + ")"}
 	}
 	return valid
 }
@@ -267,7 +266,7 @@ func (v *IpValidator) Validate(field any) bool {
 	value := field.(*FieldBaseType).Value
 	valid := net.ParseIP(value) != nil
 	if !valid {
-		field.(*FieldBaseType).error = &types.CustomError{Message: "Field is not a valid IP address"}
+		field.(*FieldBaseType).error = &types.CustomError{Message: translation.T("Field is not a valid IP address")}
 	}
 	return valid
 }
@@ -283,7 +282,7 @@ func (v *RegexValidator) Validate(field any) bool {
 		valid = regexp.MustCompile(v.RegexPattern).MatchString(value)
 	}
 	if !valid {
-		field.(*FieldBaseType).error = &types.CustomError{Message: "Field does not match the required pattern (" + v.RegexPattern + ")"}
+		field.(*FieldBaseType).error = &types.CustomError{Message: translation.T("Field does not match the required pattern (") + v.RegexPattern + ")"}
 	}
 	return valid
 }
@@ -310,12 +309,12 @@ func (v *MinValidator) Validate(field any) bool {
 	value := field.(*FieldBaseType).Value
 	valueAsInt, err := strconv.Atoi(value)
 	if err != nil {
-		field.(*FieldBaseType).error = &types.CustomError{Message: "Field value is not a integer"}
+		field.(*FieldBaseType).error = &types.CustomError{Message: translation.T("Field value is not a integer")}
 		return false
 	}
 	valid := v.Min <= valueAsInt
 	if !valid {
-		field.(*FieldBaseType).error = &types.CustomError{Message: "Field value is too small (value: " + value + ", min value: " + strconv.Itoa(v.Min) + ")"}
+		field.(*FieldBaseType).error = &types.CustomError{Message: translation.T("Field value is too small (value: ") + value + translation.T(", min value: ") + strconv.Itoa(v.Min) + ")"}
 	}
 	return valid
 }
@@ -328,12 +327,12 @@ func (v *MaxValidator) Validate(field any) bool {
 	value := field.(*FieldBaseType).Value
 	valueAsInt, err := strconv.Atoi(value)
 	if err != nil {
-		field.(*FieldBaseType).error = &types.CustomError{Message: "Field value is not a integer"}
+		field.(*FieldBaseType).error = &types.CustomError{Message: translation.T("Field value is not a integer")}
 		return false
 	}
 	valid := valueAsInt <= v.Max
 	if !valid {
-		field.(*FieldBaseType).error = &types.CustomError{Message: "Field value is too big (value: " + value + ", max value: " + strconv.Itoa(v.Max) + ")"}
+		field.(*FieldBaseType).error = &types.CustomError{Message: translation.T("Field value is too big (value: ") + value + translation.T(", max value: ") + strconv.Itoa(v.Max) + ")"}
 	}
 	return valueAsInt <= v.Max
 }
@@ -344,7 +343,7 @@ func (v *IsIntegerValidator) Validate(field any) bool {
 	value := field.(*FieldBaseType).Value
 	_, err := strconv.Atoi(value)
 	if err != nil {
-		field.(*FieldBaseType).error = &types.CustomError{Message: "Field value is not a integer"}
+		field.(*FieldBaseType).error = &types.CustomError{Message: translation.T("Field value is not a integer")}
 	}
 	return err == nil
 }
@@ -366,12 +365,12 @@ type ChoiceValidator struct{}
 func (v *ChoiceValidator) Validate(field any) bool {
 	multipleChoiceField, ok := field.(*MultipleChoiceField)
 	if !ok {
-		multipleChoiceField.error = &types.CustomError{Message: "Field is not a multiple choice field but ChoiceValidator was used"}
+		multipleChoiceField.error = &types.CustomError{Message: translation.T("Field is not a multiple choice field but ChoiceValidator was used")}
 		return false
 	}
 	_, ok = multipleChoiceField.Options[multipleChoiceField.Value]
 	if !ok {
-		multipleChoiceField.error = &types.CustomError{Message: "Field value is not a valid option"}
+		multipleChoiceField.error = &types.CustomError{Message: translation.T("Field value is not a valid option")}
 	}
 	return ok
 }
@@ -509,7 +508,7 @@ func (f *Form) SetOnChangeCallback(onChange func()) {
 func (f *Form) GetError() error {
 	for _, field := range f.Fields {
 		if !field.IsValid() {
-			return &types.CustomError{Message: field.GetId() + " is not valid (" + field.GetError().Error() + ")"}
+			return &types.CustomError{Message: field.GetId() + translation.T(" is not valid (") + field.GetError().Error() + ")"}
 		}
 	}
 	return nil

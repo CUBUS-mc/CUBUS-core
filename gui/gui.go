@@ -20,7 +20,7 @@ import (
 
 func selectCube(c *gui.Cube, infoContainerShape *canvas.Rectangle, pointerLine *canvas.Line, pointerTip *canvas.Circle, infoContainerText *widget.RichText) {
 	go func() {
-		infoContainerText.Segments = []widget.RichTextSegment{ // TODO: Show all info about the cube and add a button to delete or edit the cube
+		infoContainerText.Segments = []widget.RichTextSegment{ // TODO: add a button to delete or edit the cube
 			&widget.TextSegment{
 				Text: "Cube info\n",
 				Style: widget.RichTextStyle{
@@ -91,7 +91,7 @@ func unselectCube(infoContainerShape *canvas.Rectangle, pointerLine *canvas.Line
 	}()
 }
 
-func Gui(cubusApp fyne.App, defaults *shared.Defaults) {
+func Gui(cubusApp fyne.App, defaults *shared.Defaults) { // TODO: make this responsive
 	T := translation.T
 	cubeStrings := cubusApp.Preferences().StringListWithFallback("cubes", []string{})
 	cubusApp.Preferences().SetStringList("cubes", cubeStrings)

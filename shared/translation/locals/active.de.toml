@@ -36,3 +36,54 @@ other = "Setup"
 
 [Location]
 other = "Ort"
+
+["Field is not a valid IP address"]
+other = "Im Feld ist keine gültige IP-Adresse"
+
+[", max length: "]
+other = ", max Länge: "
+
+["Not all fields are valid (invalid field: "]
+other = "Nicht alle Felder sind gültig (ungültiges Feld: "
+
+[", min value: "]
+other = ", min Wert: "
+
+[", max value: "]
+other = ", max Wert: "
+
+["Field is not a multiple choice field but ChoiceValidator was used"]
+other = "Feld ist kein Multiple-Choice-Feld, aber ChoiceValidator wurde verwendet"
+
+["Field value is too big (value: "]
+other = "Feldwert ist zu groß (Wert: "
+
+["Field value is too small (value: "]
+other = "Feldwert ist zu klein (Wert: "
+
+["Field does not match the required pattern ("]
+other = "Feld entspricht nicht dem erforderlichen Muster ("
+
+["Field is too long (length: "]
+other = "Feld ist zu lang (Länge: "
+
+["Field value is not a integer"]
+other = "Feldwert ist keine Ganzzahl"
+
+["Not all fields that should be valid are valid (invalid field: "]
+other = "Nicht alle Felder, die gültig sein sollten, sind gültig (ungültiges Feld: "
+
+["Field value is not a valid option"]
+other = "Feldwert ist keine gültige Option"
+
+["Field cannot be empty"]
+other = "Feld darf nicht leer sein"
+
+[", min length: "]
+other = ", min Länge: "
+
+["Field is too short (length: "]
+other = "Feld ist zu kurz (Länge: "
+
+[" is not valid ("]
+other = " ist nicht gültig ("
