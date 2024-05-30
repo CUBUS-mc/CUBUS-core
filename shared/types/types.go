@@ -1,6 +1,8 @@
 package types
 
-import "crypto"
+import (
+	"crypto"
+)
 
 type CubeType struct {
 	Value string
@@ -33,6 +35,7 @@ var CubeTypes = CubeTypesStruct{
 type CubeConfig struct {
 	Id        string
 	CubeType  CubeType
+	CubeName  string
 	PublicKey crypto.PublicKey
 }
 

@@ -3,6 +3,8 @@ package gui
 import (
 	"CUBUS-core/shared"
 	"CUBUS-core/shared/translation"
+	"CUBUS-core/shared/types"
+	"CUBUS-core/shared/types/gui"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -12,7 +14,7 @@ import (
 	"time"
 )
 
-func selectCube(c *cube, infoContainerShape *canvas.Rectangle, pointerLine *canvas.Line, pointerTip *canvas.Circle, infoContainerText *widget.RichText) {
+func selectCube(c *gui.Cube, infoContainerShape *canvas.Rectangle, pointerLine *canvas.Line, pointerTip *canvas.Circle, infoContainerText *widget.RichText) {
 	go func() {
 		infoContainerText.Segments = []widget.RichTextSegment{ // TODO: Show all info about the cube and add a button to delete or edit the cube
 			&widget.TextSegment{
@@ -23,7 +25,13 @@ func selectCube(c *cube, infoContainerShape *canvas.Rectangle, pointerLine *canv
 				},
 			},
 			&widget.TextSegment{
-				Text: "Cube ID: " + c.id + "\n",
+				Text: "Cube ID: " + c.Id + "\n",
+				Style: widget.RichTextStyle{
+					ColorName: theme.ColorNameBackground,
+				},
+			},
+			&widget.TextSegment{
+				Text: "Cube Name: " + c.Config.CubeName + "\n",
 				Style: widget.RichTextStyle{
 					ColorName: theme.ColorNameBackground,
 				},
@@ -40,10 +48,10 @@ func selectCube(c *cube, infoContainerShape *canvas.Rectangle, pointerLine *canv
 				infoContainerText.Move(fyne.NewPos(pos.X+5, pos.Y+10))
 				infoContainerText.Refresh()
 			}).Start()
-		pointerTip.Move(fyne.NewPos(c.Position().X+c.size/2-5, c.Position().Y+c.size/2-5))
+		pointerTip.Move(fyne.NewPos(c.Position().X+c.CubeSize/2-5, c.Position().Y+c.CubeSize/2-5))
 		pointerTip.Show()
 		pointerLine.Resize(fyne.NewSize(0, 0))
-		pointerLine.Move(fyne.NewPos(c.Position().X+c.size/2, c.Position().Y+c.size/2))
+		pointerLine.Move(fyne.NewPos(c.Position().X+c.CubeSize/2, c.Position().Y+c.CubeSize/2))
 		pointerLine.Show()
 		canvas.NewSizeAnimation(
 			pointerLine.Size(),
@@ -104,24 +112,33 @@ func Gui(cubusApp fyne.App, defaults *shared.Defaults) {
 	pointerTip.Resize(fyne.NewSize(10, 10))
 	pointerTip.Hide()
 
-	cubeContainerObject := newCubeContainer(func() { unselectCube(infoContainerShape, pointerLine, pointerTip, infoContainerText) }, 500, 300)
+	cubeContainerObject := gui.NewCubeContainer(func() { unselectCube(infoContainerShape, pointerLine, pointerTip, infoContainerText) }, 500, 300)
 	for _, cubeConfig := range cubeConfigs {
-		cubeContainerObject.AddCube(defaults.CubeAssetURL, func(c *cube) { selectCube(c, infoContainerShape, pointerLine, pointerTip, infoContainerText) }, cubeConfig["id"].(string))
+		cubeConfigAsCorrectType := types.CubeConfig{
+			Id:        cubeConfig["id"].(string),
+			CubeType:  types.CubeType{Value: cubeConfig["type"].(string)},
+			CubeName:  cubeConfig["name"].(string),
+			PublicKey: nil,
+		}
+		cubeContainerObject.AddCube(defaults.CubeAssetURL, func(c *gui.Cube) { selectCube(c, infoContainerShape, pointerLine, pointerTip, infoContainerText) }, cubeConfig["id"].(string), cubeConfigAsCorrectType)
 	}
 	cubeContainerObject.CenterCubes()
 
 	windowMenu := fyne.NewMainMenu(
 		fyne.NewMenu(T("File"),
 			fyne.NewMenuItem("Create a new Cube", func() {
-				setupDialog(cubusWindow) // TODO: move the preference update to the setupDialog function and only update the cubeContainerObject with the new cube
-				// cubeConfigs = append(cubeConfigs, map[string]interface{}{"id": cubeConfig.id})
-				// cubeStrings = []string{}
-				// for _, cubeConfig := range cubeConfigs {
-				// 	cubeStrings = append(cubeStrings, shared.ObjectToJsonString(cubeConfig))
-				// }
-				// cubusApp.Preferences().SetStringList("cubes", cubeStrings)
-				// cubeContainerObject.AddCube(defaults.CubeAssetURL, func(c *cube) { selectCube(c, infoContainerShape, pointerLine, pointerTip, infoContainerText) }, cubeConfig.id)
-				// cubeContainerObject.CenterCubes()
+				setupDialog(
+					cubusWindow,
+					&cubeConfigs,
+					&cubeStrings,
+					cubusApp,
+					defaults,
+					cubeContainerObject,
+					infoContainerShape,
+					pointerLine,
+					pointerTip,
+					infoContainerText,
+				)
 			}),
 			fyne.NewMenuItem(T("Export config"), func() {
 				println("Export config") // TODO: implement config export
@@ -144,16 +161,16 @@ func Gui(cubusApp fyne.App, defaults *shared.Defaults) {
 			infoContainerShape.Refresh()
 			pointerLine.Refresh()
 			pointerTip.Refresh()
-			cubeContainerObject.mu.Lock()
-			selected := cubeContainerObject.selected
-			cubeContainerObject.mu.Unlock()
+			cubeContainerObject.Mu.Lock()
+			selected := cubeContainerObject.Selected
+			cubeContainerObject.Mu.Unlock()
 			if selected != nil {
-				pointerTip.Move(fyne.NewPos(selected.Position().X+selected.size/2-5, selected.Position().Y+selected.size/2-40))
-				pointerLine.Move(fyne.NewPos(selected.Position().X+selected.size/2, selected.Position().Y+selected.size/2-35))
+				pointerTip.Move(fyne.NewPos(selected.Position().X+selected.CubeSize/2-5, selected.Position().Y+selected.CubeSize/2-40))
+				pointerLine.Move(fyne.NewPos(selected.Position().X+selected.CubeSize/2, selected.Position().Y+selected.CubeSize/2-35))
 				time.AfterFunc(time.Second/4, func() {
-					cubeContainerObject.mu.Lock()
-					selected := cubeContainerObject.selected
-					cubeContainerObject.mu.Unlock()
+					cubeContainerObject.Mu.Lock()
+					selected := cubeContainerObject.Selected
+					cubeContainerObject.Mu.Unlock()
 					if selected == nil {
 						return
 					}

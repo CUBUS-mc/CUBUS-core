@@ -1,7 +1,10 @@
 package forms
 
 import (
+	"CUBUS-core/shared"
+	"CUBUS-core/shared/types/gui"
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 )
@@ -80,13 +83,50 @@ func fieldsToFyneForm(fields []Field, form *Form, box *fyne.Container, fyneForm 
 	return formItems
 }
 
-func FormToFyneForm(form *Form, box *fyne.Container, parentDialog *dialog.CustomDialog, window fyne.Window, onSubmit func(map[string]string)) {
+func FormToFyneForm(
+	form *Form,
+	box *fyne.Container,
+	parentDialog *dialog.CustomDialog,
+	window fyne.Window,
+	onSubmit func(
+		map[string]string,
+		*[]map[string]interface{},
+		*[]string,
+		fyne.App,
+		shared.Defaults,
+		*gui.CubeContainer,
+		*canvas.Rectangle,
+		canvas.Line,
+		canvas.Circle,
+		*widget.RichText,
+	),
+	cubeConfigs *[]map[string]interface{},
+	cubeStrings *[]string,
+	cubusApp fyne.App,
+	defaults *shared.Defaults,
+	cubeContainerObject *gui.CubeContainer,
+	infoContainerShape *canvas.Rectangle,
+	pointerLine *canvas.Line,
+	pointerTip *canvas.Circle,
+	infoContainerText *widget.RichText,
+) {
 	fields := form.GetFieldsToDisplay()
 	fyneForm := widget.NewForm()
 	fyneForm.Items = fieldsToFyneForm(fields, form, box, fyneForm)
 	fyneForm.OnSubmit = func() {
 		if form.IsValid() {
-			onSubmit(form.GetFieldValues())
+			onSubmit(
+				form.GetFieldValues(),
+				cubeConfigs,
+				cubeStrings,
+				cubusApp,
+				*defaults,
+				cubeContainerObject,
+				infoContainerShape,
+				*pointerLine,
+				*pointerTip,
+				infoContainerText,
+			)
 			parentDialog.Hide()
 		} else {
 			dialog.ShowError(form.GetError(), window)
