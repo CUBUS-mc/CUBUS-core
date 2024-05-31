@@ -12,7 +12,7 @@ var bundle *i18n.Bundle
 var localizer *i18n.Localizer
 
 func init() {
-	bundle = i18n.NewBundle(language.English)
+	bundle = i18n.NewBundle(language.English) // TODO: Add uwu language
 	bundle.RegisterUnmarshalFunc("toml", toml.Unmarshal)
 
 	_, filename, _, ok := runtime.Caller(0)

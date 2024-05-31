@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	fyne.io/fyne/v2 v2.4.5
-	github.com/BurntSushi/toml v1.3.2
+	github.com/BurntSushi/toml v1.4.0
 	github.com/google/uuid v1.6.0
 	github.com/nicksnyder/go-i18n/v2 v2.4.0
 	golang.org/x/sync v0.7.0
