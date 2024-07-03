@@ -54,3 +54,15 @@ Drone = "Drone"
 "Cube Type" = "Cube Type"
 "The Generic Worker cube is a generic cube that can be used for any purpose by any other cube." = "The Generic Worker cube is a generic cube that can be used for any purpose by any other cube."
 "Cube Location" = "Cube Location"
+
+["Cube Name: "]
+other = "Cube Name: "
+
+["Cube ID: "]
+other = "Cube ID: "
+
+["Cube Type: "]
+other = "Cube Type: "
+
+["Cube info"]
+other = "Cube info"

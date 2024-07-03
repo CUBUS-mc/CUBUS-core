@@ -165,3 +165,15 @@ other = "Der generische Arbeiter-Cube ist ein generischer Cube, der von jedem an
 
 ["Cube Location"]
 other = "Cube Ort"
+
+["Cube Name: "]
+other = "Cube Name: "
+
+["Cube ID: "]
+other = "Cube ID: "
+
+["Cube Type: "]
+other = "Cube Type: "
+
+["Cube info"]
+other = "Cube info"

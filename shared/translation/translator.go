@@ -12,7 +12,7 @@ var bundle *i18n.Bundle
 var localizer *i18n.Localizer
 
 func init() {
-	bundle = i18n.NewBundle(language.English) // TODO: Add uwu language
+	bundle = i18n.NewBundle(language.English) // TODO: Add uwu language called "Engwish OwO"
 	bundle.RegisterUnmarshalFunc("toml", toml.Unmarshal)
 
 	_, filename, _, ok := runtime.Caller(0)
@@ -24,11 +24,14 @@ func init() {
 
 	enPath := filepath.Join(dir, "locals", "active.en.toml")
 	dePath := filepath.Join(dir, "locals", "active.de.toml")
+	owoPath := filepath.Join(dir, "locals", "active.ky.toml")
 
 	bundle.MustLoadMessageFile(enPath)
 	bundle.MustLoadMessageFile(dePath)
+	bundle.MustLoadMessageFile(owoPath)
 
 	localizer = i18n.NewLocalizer(bundle, "en-US")
+	ChangeLanguage("owo-UwU")
 }
 
 func T(key string) string {
@@ -40,5 +43,8 @@ func T(key string) string {
 }
 
 func ChangeLanguage(lang string) {
+	if lang == "owo-UwU" {
+		lang = "ky-KG"
+	}
 	localizer = i18n.NewLocalizer(bundle, lang)
 }

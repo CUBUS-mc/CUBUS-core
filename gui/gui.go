@@ -19,29 +19,30 @@ import (
 )
 
 func selectCube(c *gui.Cube, infoContainerShape *canvas.Rectangle, pointerLine *canvas.Line, pointerTip *canvas.Circle, infoContainerText *widget.RichText) {
+	T := translation.T
 	go func() {
 		infoContainerText.Segments = []widget.RichTextSegment{ // TODO: add a button to delete or edit the cube
 			&widget.TextSegment{
-				Text: "Cube info\n",
+				Text: T("Cube info") + "\n",
 				Style: widget.RichTextStyle{
 					TextStyle: fyne.TextStyle{Bold: true},
 					ColorName: theme.ColorNameBackground,
 				},
 			},
 			&widget.TextSegment{
-				Text: "Cube ID: " + c.Id + "\n",
+				Text: T("Cube ID: ") + c.Id + "\n",
 				Style: widget.RichTextStyle{
 					ColorName: theme.ColorNameBackground,
 				},
 			},
 			&widget.TextSegment{
-				Text: "Cube Name: " + c.Config.CubeName + "\n",
+				Text: T("Cube Name: ") + c.Config.CubeName + "\n",
 				Style: widget.RichTextStyle{
 					ColorName: theme.ColorNameBackground,
 				},
 			},
 			&widget.TextSegment{
-				Text: "Cube Type: " + c.Config.CubeType.Value + "\n",
+				Text: T("Cube Type: ") + c.Config.CubeType.Value + "\n",
 				Style: widget.RichTextStyle{
 					ColorName: theme.ColorNameBackground,
 				},
@@ -152,6 +153,9 @@ func Gui(cubusApp fyne.App, defaults *shared.Defaults) { // TODO: make this resp
 			}),
 			fyne.NewMenuItem(T("Export cube configs"), func() {
 				saveDialog := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
+					if writer == nil {
+						return
+					}
 					if err != nil {
 						log.Println("Error exporting config:", err)
 						return
@@ -175,6 +179,9 @@ func Gui(cubusApp fyne.App, defaults *shared.Defaults) { // TODO: make this resp
 			}),
 			fyne.NewMenuItem(T("Import cube configs"), func() {
 				openDialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
+					if reader == nil {
+						return
+					}
 					if err != nil {
 						log.Println("Error importing config:", err)
 						return
@@ -195,11 +202,7 @@ func Gui(cubusApp fyne.App, defaults *shared.Defaults) { // TODO: make this resp
 						cubeStrings[i] = shared.ObjectToJsonString(config)
 					}
 					cubusApp.Preferences().SetStringList("cubes", cubeStrings)
-
-					// Clear the current cubes from the cubeContainerObject
 					cubeContainerObject.ClearCubes()
-
-					// Add the imported cubes to the cubeContainerObject
 					for _, cubeConfig := range importedConfigs {
 						cubeConfigAsCorrectType := types.CubeConfig{
 							Id:        cubeConfig["id"].(string),
