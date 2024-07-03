@@ -22,6 +22,7 @@ type CubeContainer struct {
 	UnselectCallback func()
 	IsoDistance      float32
 	Mu               sync.Mutex
+	window           fyne.Window
 }
 
 type Cube struct {
@@ -33,13 +34,14 @@ type Cube struct {
 	Config         types.CubeConfig
 }
 
-func NewCubeContainer(unselectCallback func(), x float32, y float32) *CubeContainer {
+func NewCubeContainer(unselectCallback func(), x float32, y float32, window fyne.Window) *CubeContainer {
 	return &CubeContainer{
 		Container:        container.NewWithoutLayout(),
 		UnselectCallback: unselectCallback,
 		X:                x,
 		Y:                y,
 		IsoDistance:      float32(70),
+		window:           window,
 	}
 }
 
@@ -55,19 +57,11 @@ func (cc *CubeContainer) ChangeSelected(c *Cube, selectCallback func(c *Cube)) {
 	}
 }
 
-func (cc *CubeContainer) AddCube(textureUrl string, selectCallback func(c *Cube), id string, cubeConfig types.CubeConfig) { // TODO: Change method so it adds the cubes in a square not a rectangle
-	if math.IsNaN(float64(cc.X)) { // TODO: Fix that there could be nan (this is a problem in the setupDialog method)
-		cc.X = 0
-	}
-	if math.IsNaN(float64(cc.Y)) {
-		cc.Y = 0
-	}
-	xNew := cc.X + (float32(cc.NCubes%5)*cc.IsoDistance - float32(cc.NCubes/5)*cc.IsoDistance)
-	yNew := cc.Y + (float32(cc.NCubes/5)*cc.IsoDistance/2 + float32(cc.NCubes%5)*cc.IsoDistance/2) + float32(cc.NCubes)
-	c := newCube(textureUrl, func(c *Cube) { cc.ChangeSelected(c, selectCallback) }, id, xNew, yNew, cubeConfig)
+func (cc *CubeContainer) AddCube(textureUrl string, selectCallback func(c *Cube), id string, cubeConfig types.CubeConfig) {
+	c := newCube(textureUrl, func(c *Cube) { cc.ChangeSelected(c, selectCallback) }, id, 0, 0, cubeConfig)
 	cc.Container.Add(c)
 	cc.NCubes++
-	// cc.Container.Objects[cc.NCubes-1].Move(fyne.NewPos(xNew, yNew))
+	cc.CenterCubes()
 }
 
 func (cc *CubeContainer) MoveContainer(x float32, y float32) {
@@ -79,12 +73,37 @@ func (cc *CubeContainer) MoveContainer(x float32, y float32) {
 		xNew := cc.Container.Objects[i].Position().X + deltaX
 		yNew := cc.Container.Objects[i].Position().Y + deltaY
 		if cube, ok := cc.Container.Objects[i].(*Cube); ok {
-			cube.MoveSmoothlyTo(xNew, yNew)
+			cube.Move(fyne.NewPos(xNew, yNew))
+			cube.X = xNew
+			cube.Y = yNew
 		}
 	}
 }
 
+func (cc *CubeContainer) rePlaceCubes() {
+	cubesPerRow := int(math.Ceil(math.Sqrt(float64(cc.NCubes))))
+	for i := 0; i < cc.NCubes; i++ {
+		row := i / cubesPerRow
+		col := i % cubesPerRow
+
+		threeDimX := float32(row*95) + cc.IsoDistance
+		threeDimY := float32(0)
+		threeDimZ := float32(col*95) + cc.IsoDistance
+
+		xNew := cc.X + ((threeDimX - threeDimZ) / 1.4142135624)
+		yNew := cc.Y + ((threeDimX + 2*threeDimY + threeDimZ) / 2.4494897428)
+		if cube, ok := cc.Container.Objects[i].(*Cube); ok {
+			cube.Move(fyne.NewPos(xNew, yNew))
+			cube.X = xNew
+			cube.Y = yNew
+		}
+	}
+	cc.Container.Refresh()
+}
+
 func (cc *CubeContainer) CenterCubes() {
+	cc.rePlaceCubes()
+
 	var sumX, sumY float32
 	for i := 0; i < cc.NCubes; i++ {
 		if cube, ok := cc.Container.Objects[i].(*Cube); ok {
@@ -95,8 +114,8 @@ func (cc *CubeContainer) CenterCubes() {
 	meanX := sumX / float32(cc.NCubes)
 	meanY := sumY / float32(cc.NCubes)
 
-	deltaX := 700 - meanX
-	deltaY := 450 - meanY
+	deltaX := cc.window.Canvas().Size().Width*0.5 - meanX
+	deltaY := cc.window.Canvas().Size().Height*0.5 - meanY
 
 	cc.MoveContainer(cc.X+deltaX, cc.Y+deltaY)
 }

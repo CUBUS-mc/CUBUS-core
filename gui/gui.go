@@ -18,9 +18,14 @@ import (
 	"time"
 )
 
+var cubusWindow fyne.Window
+var lastWindowSize fyne.Size
+
 func selectCube(c *gui.Cube, infoContainerShape *canvas.Rectangle, pointerLine *canvas.Line, pointerTip *canvas.Circle, infoContainerText *widget.RichText) {
 	T := translation.T
 	go func() {
+		infoContainerShape.Resize(fyne.NewSize(WindowWidth()*0.3, WindowHeight()-80))
+		infoContainerText.Resize(fyne.NewSize(WindowWidth()*0.3-10, WindowHeight()-105))
 		infoContainerText.Segments = []widget.RichTextSegment{ // TODO: add a button to delete or edit the cube
 			&widget.TextSegment{
 				Text: T("Cube info") + "\n",
@@ -51,7 +56,7 @@ func selectCube(c *gui.Cube, infoContainerShape *canvas.Rectangle, pointerLine *
 		infoContainerText.Refresh()
 		canvas.NewPositionAnimation(
 			infoContainerShape.Position(),
-			fyne.NewPos(1400-325, 25),
+			fyne.NewPos(WindowWidth()-WindowWidth()*0.3-25, 25),
 			time.Second/4,
 			func(pos fyne.Position) {
 				infoContainerShape.Move(pos)
@@ -66,7 +71,7 @@ func selectCube(c *gui.Cube, infoContainerShape *canvas.Rectangle, pointerLine *
 		pointerLine.Show()
 		canvas.NewSizeAnimation(
 			pointerLine.Size(),
-			fyne.NewSize(1400-c.Position().X-325, 2),
+			fyne.NewSize(WindowWidth()-c.Position().X-WindowWidth()*0.3-25, 2),
 			time.Second/4,
 			func(size fyne.Size) {
 				pointerLine.Resize(size)
@@ -79,7 +84,7 @@ func unselectCube(infoContainerShape *canvas.Rectangle, pointerLine *canvas.Line
 	go func() {
 		canvas.NewPositionAnimation(
 			infoContainerShape.Position(),
-			fyne.NewPos(1400, 25),
+			fyne.NewPos(WindowWidth(), 25),
 			time.Second/4,
 			func(pos fyne.Position) {
 				infoContainerShape.Move(pos)
@@ -92,6 +97,33 @@ func unselectCube(infoContainerShape *canvas.Rectangle, pointerLine *canvas.Line
 	}()
 }
 
+func startResizeListener(infoContainerShape *canvas.Rectangle, infoContainerText *widget.RichText, cubeContainerObject *gui.CubeContainer) {
+	go func() {
+		for {
+			currentSize := cubusWindow.Canvas().Size()
+			if !(currentSize == lastWindowSize) {
+				lastWindowSize = currentSize
+				if cubeContainerObject.Selected != nil {
+					infoContainerShape.Move(fyne.NewPos(WindowWidth()-WindowWidth()*0.3-25, 25))
+					infoContainerText.Move(fyne.NewPos(WindowWidth()-WindowWidth()*0.3-20, 35))
+
+					infoContainerShape.Resize(fyne.NewSize(WindowWidth()*0.3, WindowHeight()-80))
+					infoContainerText.Resize(fyne.NewSize(WindowWidth()*0.3-10, WindowHeight()-105))
+				} else {
+					infoContainerShape.Move(fyne.NewPos(WindowWidth(), 25))
+					infoContainerText.Move(fyne.NewPos(WindowWidth(), 35))
+					infoContainerShape.Resize(fyne.NewSize(0, 0))
+					infoContainerText.Resize(fyne.NewSize(0, 0))
+				}
+				infoContainerShape.Refresh()
+				infoContainerText.Refresh()
+
+				cubeContainerObject.CenterCubes()
+			}
+		}
+	}()
+}
+
 func Gui(cubusApp fyne.App, defaults *shared.Defaults) { // TODO: make this responsive
 	T := translation.T
 	cubeStrings := cubusApp.Preferences().StringListWithFallback("cubes", []string{})
@@ -101,19 +133,20 @@ func Gui(cubusApp fyne.App, defaults *shared.Defaults) { // TODO: make this resp
 		cubeConfigs[i] = shared.JsonStringToObject(cubeString)
 	}
 
-	cubusWindow := cubusApp.NewWindow("CUBUS core")
-	cubusWindow.Resize(fyne.NewSize(1400, 900))
+	cubusWindow = cubusApp.NewWindow("CUBUS core")
+	cubusWindow.Resize(WindowSize()) // 1400x900 is the default size of the unresponsive GUI
 	cubusWindow.CenterOnScreen()
 	cubusWindow.SetIcon(cubusApp.Icon())
-	cubusWindow.SetFixedSize(true)
+
+	lastWindowSize = cubusWindow.Canvas().Size()
 
 	infoContainerShape := canvas.NewRectangle(color.White)
-	infoContainerShape.Resize(fyne.NewSize(300, 825))
-	infoContainerShape.Move(fyne.NewPos(1400, 25))
+	infoContainerShape.Resize(fyne.NewSize(WindowWidth()*0.3, WindowHeight()-80))
+	infoContainerShape.Move(fyne.NewPos(WindowWidth(), 25))
 	infoContainerShape.CornerRadius = 12
 
 	infoContainerText := widget.NewRichText()
-	infoContainerText.Resize(fyne.NewSize(290, 800))
+	infoContainerText.Resize(fyne.NewSize(WindowWidth()*0.3-10, WindowHeight()-105))
 	infoContainerText.Wrapping = fyne.TextWrapBreak
 
 	pointerLine := canvas.NewLine(color.White)
@@ -123,7 +156,7 @@ func Gui(cubusApp fyne.App, defaults *shared.Defaults) { // TODO: make this resp
 	pointerTip.Resize(fyne.NewSize(10, 10))
 	pointerTip.Hide()
 
-	cubeContainerObject := gui.NewCubeContainer(func() { unselectCube(infoContainerShape, pointerLine, pointerTip, infoContainerText) }, 500, 300)
+	cubeContainerObject := gui.NewCubeContainer(func() { unselectCube(infoContainerShape, pointerLine, pointerTip, infoContainerText) }, WindowWidth()*0.5, WindowHeight()*0.5, cubusWindow)
 	for _, cubeConfig := range cubeConfigs {
 		cubeConfigAsCorrectType := types.CubeConfig{
 			Id:        cubeConfig["id"].(string),
@@ -134,6 +167,8 @@ func Gui(cubusApp fyne.App, defaults *shared.Defaults) { // TODO: make this resp
 		cubeContainerObject.AddCube(defaults.CubeAssetURL, func(c *gui.Cube) { selectCube(c, infoContainerShape, pointerLine, pointerTip, infoContainerText) }, cubeConfig["id"].(string), cubeConfigAsCorrectType)
 	}
 	cubeContainerObject.CenterCubes()
+
+	startResizeListener(infoContainerShape, infoContainerText, cubeContainerObject)
 
 	windowMenu := fyne.NewMainMenu(
 		fyne.NewMenu(T("File"),
@@ -249,7 +284,7 @@ func Gui(cubusApp fyne.App, defaults *shared.Defaults) { // TODO: make this resp
 					if selected == nil {
 						return
 					}
-					pointerLine.Resize(fyne.NewSize(1400-selected.Position().X-325, 2))
+					pointerLine.Resize(fyne.NewSize(WindowWidth()-selected.Position().X-WindowWidth()*0.3-25, 2))
 				})
 			}
 		}
