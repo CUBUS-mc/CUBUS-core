@@ -206,7 +206,32 @@ func (d *DisplayAfter) DisplayCondition(field any) bool {
 		}
 	}
 	return false
+}
 
+type OrDisplayCondition struct {
+	conditions []DisplayCondition
+}
+
+func (d *OrDisplayCondition) DisplayCondition(field any) bool {
+	for _, condition := range d.conditions {
+		if condition.DisplayCondition(field) {
+			return true
+		}
+	}
+	return false
+}
+
+type AndDisplayCondition struct {
+	conditions []DisplayCondition
+}
+
+func (d *AndDisplayCondition) DisplayCondition(field any) bool {
+	for _, condition := range d.conditions {
+		if !condition.DisplayCondition(field) {
+			return false
+		}
+	}
+	return true
 }
 
 // Defining the Field Types based on the Base Field Type
@@ -447,6 +472,23 @@ func (f *FieldGroup) SetHeading(heading string) {
 	f.heading = heading
 }
 
+// Defining the URL Field Type based on the Text Field Type
+
+type UrlField struct {
+	*TextField
+}
+
+type UrlValidator struct{}
+
+func (v *UrlValidator) Validate(field any) bool {
+	value := field.(*FieldBaseType).Value
+	valid := regexp.MustCompile(`^https?://.`).MatchString(value)
+	if !valid {
+		field.(*FieldBaseType).error = &types.CustomError{Message: translation.T("Field is not a valid URL")}
+	}
+	return valid
+}
+
 // Defining the Form Type
 
 type Form struct {
@@ -530,6 +572,8 @@ func NewForm(fields ...Field) *Form {
 			v.TextField.FieldBaseType.form = form
 		case *FieldGroup:
 			v.FieldBaseType.form = form
+		case *UrlField:
+			v.TextField.FieldBaseType.form = form
 		}
 	}
 	return form
@@ -553,4 +597,8 @@ func NewMultipleChoiceField(id string, displayConditions []DisplayCondition, val
 
 func NewMessage(id string, displayConditions []DisplayCondition, message string) *Message {
 	return &Message{FieldBaseType: &FieldBaseType{Id: id, DisplayConditions: displayConditions, Validators: []Validator{}, Value: message}}
+}
+
+func NewUrlField(id string, displayConditions []DisplayCondition, validators []Validator, placeholder string, prompt string, defaultValue string) *UrlField {
+	return &UrlField{TextField: &TextField{FieldBaseType: &FieldBaseType{Id: id, DisplayConditions: displayConditions, Validators: validators, Value: defaultValue}, Placeholder: placeholder, Prompt: prompt}}
 }

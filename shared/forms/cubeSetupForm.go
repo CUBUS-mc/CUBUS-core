@@ -75,9 +75,17 @@ func GetCubeSetupForm() *Form {
 			},
 			"",
 		),
+		NewUrlField(
+			"remoteUrl",
+			[]DisplayCondition{&DisplayAfter{fieldId: "cubeLocation"}, &HasValueDisplayCondition{fieldId: "cubeLocation", value: "remote"}},
+			[]Validator{&UrlValidator{}},
+			translation.T("Please enter the URL of the remote CUBUS-Core orchestrator server"),
+			translation.T("Remote URL"),
+			"",
+		),
 		NewTextField(
 			"cubeName",
-			[]DisplayCondition{&DisplayAfter{fieldId: "cubeLocation"}},
+			[]DisplayCondition{&OrDisplayCondition{[]DisplayCondition{&HasValueDisplayCondition{fieldId: "cubeLocation", value: "local"}, &DisplayAfter{fieldId: "remoteUrl"}}}},
 			[]Validator{&NotEmptyValidator{}},
 			translation.T("Please enter the name of the cube"),
 			translation.T("Cube Name"),

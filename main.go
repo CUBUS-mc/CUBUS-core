@@ -2,6 +2,7 @@ package main
 
 import (
 	"CUBUS-core/gui"
+	"CUBUS-core/orchestrator/server"
 	"CUBUS-core/shared"
 	"CUBUS-core/shared/translation"
 	"fyne.io/fyne/v2"
@@ -21,6 +22,9 @@ func main() {
 	cubusApp.Preferences().SetString("language", language)
 	translation.ChangeLanguage(language)
 
+	orchestratorServer := server.NewServer(":25560")
+	orchestratorServer.Start()
+
 	switch ui {
 	case shared.CLI:
 		println(T("CLI not implemented yet")) // Implement CLI with https://charm.sh/
@@ -28,5 +32,6 @@ func main() {
 		gui.NewGui(cubusApp, defaultValues).Run()
 	case shared.API:
 		println(T("API not implemented yet"))
+	case shared.NONE: // Do nothing
 	}
 }

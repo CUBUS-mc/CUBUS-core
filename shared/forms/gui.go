@@ -7,7 +7,10 @@ import (
 )
 
 func refreshForm(form *Form, box *fyne.Container, fyneForm *widget.Form) {
+	fyneForm.Items = nil
+	fyneForm.Refresh()
 	fyneForm.Items = fieldsToFyneForm(form.GetFieldsToDisplay(), form, box, fyneForm)
+	fyneForm.Refresh()
 	box.Refresh()
 }
 
@@ -73,6 +76,21 @@ func fieldsToFyneForm(fields []Field, form *Form, box *fyne.Container, fyneForm 
 				formItems = append(formItems, widget.NewFormItem(field.GetHeading(), widget.NewLabel("")))
 			}
 			formItems = append(formItems, fieldsToFyneForm(field.GetFieldsToDisplay(), form, box, fyneForm)...)
+		case *UrlField:
+			entry := widget.NewEntry()
+			entry.SetText(field.GetValue())
+			entry.SetPlaceHolder(field.GetPlaceholder())
+			entry.OnChanged = func(text string) {
+				field.SetValue(text)
+				refreshForm(form, box, fyneForm)
+			}
+			entry.Validator = func(text string) error {
+				if !field.IsValid() {
+					return field.GetError()
+				}
+				return nil
+			}
+			formItems = append(formItems, widget.NewFormItem(field.GetPrompt(), entry))
 		default:
 			panic("Unknown field type")
 		}

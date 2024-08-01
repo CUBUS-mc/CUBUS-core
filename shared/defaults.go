@@ -3,9 +3,10 @@ package shared
 type UiType string
 
 const (
-	CLI UiType = "cli"
-	GUI UiType = "gui"
-	API UiType = "api"
+	CLI  UiType = "cli"
+	GUI  UiType = "gui"
+	API  UiType = "api"
+	NONE UiType = "none"
 )
 
 type Defaults struct {

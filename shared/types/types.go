@@ -2,6 +2,7 @@ package types
 
 import (
 	"crypto"
+	"encoding/json"
 )
 
 type CubeType struct {
@@ -37,6 +38,10 @@ type CubeConfig struct {
 	CubeType  CubeType
 	CubeName  string
 	PublicKey crypto.PublicKey
+}
+
+func (cc *CubeConfig) ToJson() ([]byte, error) {
+	return json.Marshal(cc)
 }
 
 type CustomError struct {

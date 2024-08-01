@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"CUBUS-core/orchestrator/client"
 	"CUBUS-core/shared"
 	"CUBUS-core/shared/forms"
 	"CUBUS-core/shared/translation"
@@ -46,6 +47,20 @@ func setupDialog(
 				break
 			}
 		}
+
+		orchestratorClient := client.NewClient()
+		var serverUrl string
+		if values["cubeLocation"] == "local" {
+			serverUrl = "http://localhost:25560"
+		} else {
+			serverUrl = values["remoteUrl"]
+		}
+		err := orchestratorClient.CreateNewCube(serverUrl, cubeConfig)
+		if err != nil {
+			dialog.ShowError(err, window)
+			return
+		}
+
 		*cubeConfigs = append(
 			*cubeConfigs,
 			map[string]interface{}{
