@@ -172,7 +172,7 @@ func Gui(cubusApp fyne.App, defaults *shared.Defaults) { // TODO: make this resp
 
 	windowMenu := fyne.NewMainMenu(
 		fyne.NewMenu(T("File"),
-			fyne.NewMenuItem("Create a new Cube", func() {
+			fyne.NewMenuItem(T("Create a new Cube"), func() {
 				setupDialog(
 					cubusWindow,
 					&cubeConfigs,
@@ -192,17 +192,17 @@ func Gui(cubusApp fyne.App, defaults *shared.Defaults) { // TODO: make this resp
 						return
 					}
 					if err != nil {
-						log.Println("Error exporting config:", err)
+						log.Println(T("Error exporting config: "), err)
 						return
 					}
 					jsonData, err := json.Marshal(cubeConfigs)
 					if err != nil {
-						log.Println("Error exporting config:", err)
+						log.Println(T("Error exporting config: "), err)
 						return
 					}
 					_, err = writer.Write(jsonData)
 					if err != nil {
-						log.Println("Error writing config file:", err)
+						log.Println(T("Error writing config file: "), err)
 					}
 					err = writer.Close()
 					if err != nil {
@@ -218,18 +218,18 @@ func Gui(cubusApp fyne.App, defaults *shared.Defaults) { // TODO: make this resp
 						return
 					}
 					if err != nil {
-						log.Println("Error importing config:", err)
+						log.Println(T("Error importing config: "), err)
 						return
 					}
 					jsonData, err := io.ReadAll(reader)
 					if err != nil {
-						log.Println("Error reading config file:", err)
+						log.Println(T("Error reading config file: "), err)
 						return
 					}
 					var importedConfigs []map[string]interface{}
 					err = json.Unmarshal(jsonData, &importedConfigs)
 					if err != nil {
-						log.Println("Error parsing config file:", err)
+						log.Println(T("Error parsing config file: "), err)
 						return
 					}
 					cubeStrings := make([]string, len(importedConfigs))
