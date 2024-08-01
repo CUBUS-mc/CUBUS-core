@@ -41,15 +41,6 @@ func setupDialog(
 
 	formSubmitCallback := func(
 		values map[string]string,
-		cubeConfigs *[]map[string]interface{},
-		cubeStrings *[]string,
-		cubusApp fyne.App,
-		defaults shared.Defaults,
-		cubeContainerObject *gui.CubeContainer,
-		infoContainerShape *canvas.Rectangle,
-		pointerLine canvas.Line,
-		pointerTip canvas.Circle,
-		infoContainerText *widget.RichText,
 	) {
 		for key, value := range values {
 			switch key {
@@ -74,27 +65,18 @@ func setupDialog(
 			*cubeStrings = append(*cubeStrings, shared.ObjectToJsonString(cubeConfig))
 		}
 		cubusApp.Preferences().SetStringList("cubes", *cubeStrings)
-		cubeContainerObject.AddCube(defaults.CubeAssetURL, func(c *gui.Cube) { selectCube(c, infoContainerShape, &pointerLine, &pointerTip, infoContainerText) }, cubeConfig.Id, cubeConfig)
+		cubeContainerObject.AddCube(defaults.CubeAssetURL, func(c *gui.Cube) { selectCube(c, infoContainerShape, pointerLine, pointerTip, infoContainerText) }, cubeConfig.Id, cubeConfig)
 		cubeContainerObject.CenterCubes()
 	}
 
 	formPopup := dialog.NewCustomWithoutButtons(T("Setup"), box, window)
-	formPopup.Resize(fyne.NewSize(700, 400))
+	formPopup.Resize(fyne.NewSize(WindowWidth()*0.5, WindowHeight()*0.5))
 	forms.FormToFyneForm(
 		cubeSetupForm,
 		box,
 		formPopup,
 		window,
 		formSubmitCallback,
-		cubeConfigs,
-		cubeStrings,
-		cubusApp,
-		defaults,
-		cubeContainerObject,
-		infoContainerShape,
-		pointerLine,
-		pointerTip,
-		infoContainerText,
 	)
 	formPopup.Show()
 }

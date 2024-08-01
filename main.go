@@ -17,6 +17,9 @@ func main() {
 
 	ui := shared.UiType(cubusApp.Preferences().StringWithFallback("ui", string(defaultValues.UI)))
 	cubusApp.Preferences().SetString("ui", string(ui))
+	language := cubusApp.Preferences().StringWithFallback("language", defaultValues.Language)
+	cubusApp.Preferences().SetString("language", language)
+	translation.ChangeLanguage(language)
 
 	switch ui {
 	case shared.CLI:

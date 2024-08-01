@@ -257,7 +257,7 @@ func Gui(cubusApp fyne.App, defaults *shared.Defaults) { // TODO: make this resp
 				openDialog.Show()
 			}),
 			fyne.NewMenuItem(T("Settings"), func() {
-				println("Settings") // TODO: implement settings (e.g. change the language)
+				settingsDialog(cubusApp)
 			}),
 		),
 	)

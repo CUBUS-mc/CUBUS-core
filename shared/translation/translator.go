@@ -11,8 +11,9 @@ import (
 var bundle *i18n.Bundle
 var localizer *i18n.Localizer
 
+// TODO: update components using T() when language is changed
 func init() {
-	bundle = i18n.NewBundle(language.English) // TODO: Add uwu language called "Engwish OwO"
+	bundle = i18n.NewBundle(language.English)
 	bundle.RegisterUnmarshalFunc("toml", toml.Unmarshal)
 
 	_, filename, _, ok := runtime.Caller(0)
@@ -31,7 +32,6 @@ func init() {
 	bundle.MustLoadMessageFile(owoPath)
 
 	localizer = i18n.NewLocalizer(bundle, "en-US")
-	ChangeLanguage("owo-UwU")
 }
 
 func T(key string) string {
@@ -43,6 +43,7 @@ func T(key string) string {
 }
 
 func ChangeLanguage(lang string) {
+	println("Changing language to", lang)
 	if lang == "owo-UwU" {
 		lang = "ky-KG"
 	}

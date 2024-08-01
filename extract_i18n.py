@@ -7,7 +7,7 @@ import logging
 def load_existing_strings(directory):
     strings = set()
     for filename in glob.glob(os.path.join(directory, '*.toml')):
-        with open(filename, 'r') as f:
+        with open(filename, 'r', encoding='utf-8') as f:
             data = toml.load(f)
             strings.update(data.keys())
     return strings
@@ -42,10 +42,10 @@ def write_strings_to_toml(strings, directory):
         logging.info(f"No new strings to add to {directory}")
         return
     for filename in glob.glob(os.path.join(directory, '*.toml')):
-        with open(filename, 'r') as f:
+        with open(filename, 'r', encoding='utf-8') as f:
             data = toml.load(f)
-        data.update({f'{s}': {"other": s} for s in strings})
-        with open(filename, 'w') as f:
+        data.update({f'{s}': s for s in strings})
+        with open(filename, 'w', encoding='utf-8') as f:
             toml.dump(data, f)
     logging.info(f"Added {len(strings)} new strings to {directory} (keys: {strings})")
 
