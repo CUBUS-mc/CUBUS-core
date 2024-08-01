@@ -5,6 +5,7 @@ import (
 	"CUBUS-core/shared/translation"
 	"CUBUS-core/shared/types"
 	"CUBUS-core/shared/types/gui"
+	"context"
 	"encoding/json"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -15,14 +16,15 @@ import (
 	"image/color"
 	"io"
 	"log"
+	"sync"
 	"time"
 )
 
 var cubusWindow fyne.Window
 var lastWindowSize fyne.Size
+var T = translation.T
 
 func selectCube(c *gui.Cube, infoContainerShape *canvas.Rectangle, pointerLine *canvas.Line, pointerTip *canvas.Circle, infoContainerText *widget.RichText) {
-	T := translation.T
 	go func() {
 		infoContainerShape.Resize(fyne.NewSize(WindowWidth()*0.3, WindowHeight()-80))
 		infoContainerText.Resize(fyne.NewSize(WindowWidth()*0.3-10, WindowHeight()-105))
@@ -97,49 +99,93 @@ func unselectCube(infoContainerShape *canvas.Rectangle, pointerLine *canvas.Line
 	}()
 }
 
-func startResizeListener(infoContainerShape *canvas.Rectangle, infoContainerText *widget.RichText, cubeContainerObject *gui.CubeContainer) {
-	go func() {
+func startResizeListener(infoContainerShape *canvas.Rectangle, infoContainerText *widget.RichText, cubeContainerObject *gui.CubeContainer, ctx context.Context) {
+	go func(ctx context.Context) {
 		for {
-			currentSize := cubusWindow.Canvas().Size()
-			if !(currentSize == lastWindowSize) {
-				lastWindowSize = currentSize
-				if cubeContainerObject.Selected != nil {
-					infoContainerShape.Move(fyne.NewPos(WindowWidth()-WindowWidth()*0.3-25, 25))
-					infoContainerText.Move(fyne.NewPos(WindowWidth()-WindowWidth()*0.3-20, 35))
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				currentSize := cubusWindow.Canvas().Size()
+				if !(currentSize == lastWindowSize) {
+					lastWindowSize = currentSize
+					if cubeContainerObject.Selected != nil {
+						infoContainerShape.Move(fyne.NewPos(WindowWidth()-WindowWidth()*0.3-25, 25))
+						infoContainerText.Move(fyne.NewPos(WindowWidth()-WindowWidth()*0.3-20, 35))
 
-					infoContainerShape.Resize(fyne.NewSize(WindowWidth()*0.3, WindowHeight()-80))
-					infoContainerText.Resize(fyne.NewSize(WindowWidth()*0.3-10, WindowHeight()-105))
-				} else {
-					infoContainerShape.Move(fyne.NewPos(WindowWidth(), 25))
-					infoContainerText.Move(fyne.NewPos(WindowWidth(), 35))
-					infoContainerShape.Resize(fyne.NewSize(0, 0))
-					infoContainerText.Resize(fyne.NewSize(0, 0))
+						infoContainerShape.Resize(fyne.NewSize(WindowWidth()*0.3, WindowHeight()-80))
+						infoContainerText.Resize(fyne.NewSize(WindowWidth()*0.3-10, WindowHeight()-105))
+					} else {
+						infoContainerShape.Move(fyne.NewPos(WindowWidth(), 25))
+						infoContainerText.Move(fyne.NewPos(WindowWidth(), 35))
+						infoContainerShape.Resize(fyne.NewSize(0, 0))
+						infoContainerText.Resize(fyne.NewSize(0, 0))
+					}
+					infoContainerShape.Refresh()
+					infoContainerText.Refresh()
+
+					cubeContainerObject.CenterCubes()
 				}
-				infoContainerShape.Refresh()
-				infoContainerText.Refresh()
-
-				cubeContainerObject.CenterCubes()
 			}
 		}
-	}()
+	}(ctx)
 }
 
-func Gui(cubusApp fyne.App, defaults *shared.Defaults) { // TODO: make this responsive
-	T := translation.T
-	cubeStrings := cubusApp.Preferences().StringListWithFallback("cubes", []string{})
-	cubusApp.Preferences().SetStringList("cubes", cubeStrings)
-	cubeConfigs := make([]map[string]interface{}, len(cubeStrings))
-	for i, cubeString := range cubeStrings {
-		cubeConfigs[i] = shared.JsonStringToObject(cubeString)
+type Gui struct {
+	app                 fyne.App
+	defaults            *shared.Defaults
+	ctx                 context.Context
+	cancel              context.CancelFunc
+	mu                  sync.Mutex
+	cubeConfigs         []map[string]interface{}
+	cubeStrings         []string
+	cubeContainerObject *gui.CubeContainer
+}
+
+func NewGui(app fyne.App, defaults *shared.Defaults) *Gui {
+	ctx, cancel := context.WithCancel(context.Background())
+	newGui := &Gui{app: app, defaults: defaults, ctx: ctx, cancel: cancel}
+	translation.AddLanguageChangeListener(newGui.RecreateComponents)
+	return newGui
+}
+
+func (g *Gui) RecreateComponents() {
+	g.mu.Lock()
+	g.cancel()
+	g.ctx, g.cancel = context.WithCancel(context.Background())
+	g.CreateGui()
+	defer g.mu.Unlock()
+}
+
+func (g *Gui) SetupGui() {
+	g.cubeStrings = g.app.Preferences().StringListWithFallback("cubes", []string{})
+	g.app.Preferences().SetStringList("cubes", g.cubeStrings)
+	g.cubeConfigs = make([]map[string]interface{}, len(g.cubeStrings))
+	for i, cubeString := range g.cubeStrings {
+		g.cubeConfigs[i] = shared.JsonStringToObject(cubeString)
 	}
 
-	cubusWindow = cubusApp.NewWindow("CUBUS core")
-	cubusWindow.Resize(WindowSize()) // 1400x900 is the default size of the unresponsive GUI
+	cubusWindow = g.app.NewWindow("CUBUS core")
+	cubusWindow.Resize(WindowSize())
 	cubusWindow.CenterOnScreen()
-	cubusWindow.SetIcon(cubusApp.Icon())
+	cubusWindow.SetIcon(g.app.Icon())
 
 	lastWindowSize = cubusWindow.Canvas().Size()
 
+	g.cubeContainerObject = gui.NewCubeContainer(WindowWidth()*0.5, WindowHeight()*0.5, cubusWindow)
+	for _, cubeConfig := range g.cubeConfigs {
+		cubeConfigAsCorrectType := types.CubeConfig{
+			Id:        cubeConfig["id"].(string),
+			CubeType:  types.CubeType{Value: cubeConfig["type"].(string)},
+			CubeName:  cubeConfig["name"].(string),
+			PublicKey: nil,
+		}
+		g.cubeContainerObject.AddCube(g.defaults.CubeAssetURL, cubeConfig["id"].(string), cubeConfigAsCorrectType)
+	}
+	g.cubeContainerObject.CenterCubes()
+}
+
+func (g *Gui) CreateGui() {
 	infoContainerShape := canvas.NewRectangle(color.White)
 	infoContainerShape.Resize(fyne.NewSize(WindowWidth()*0.3, WindowHeight()-80))
 	infoContainerShape.Move(fyne.NewPos(WindowWidth(), 25))
@@ -156,34 +202,23 @@ func Gui(cubusApp fyne.App, defaults *shared.Defaults) { // TODO: make this resp
 	pointerTip.Resize(fyne.NewSize(10, 10))
 	pointerTip.Hide()
 
-	cubeContainerObject := gui.NewCubeContainer(func() { unselectCube(infoContainerShape, pointerLine, pointerTip, infoContainerText) }, WindowWidth()*0.5, WindowHeight()*0.5, cubusWindow)
-	for _, cubeConfig := range cubeConfigs {
-		cubeConfigAsCorrectType := types.CubeConfig{
-			Id:        cubeConfig["id"].(string),
-			CubeType:  types.CubeType{Value: cubeConfig["type"].(string)},
-			CubeName:  cubeConfig["name"].(string),
-			PublicKey: nil,
-		}
-		cubeContainerObject.AddCube(defaults.CubeAssetURL, func(c *gui.Cube) { selectCube(c, infoContainerShape, pointerLine, pointerTip, infoContainerText) }, cubeConfig["id"].(string), cubeConfigAsCorrectType)
-	}
-	cubeContainerObject.CenterCubes()
+	selectCallback := func(c *gui.Cube) { selectCube(c, infoContainerShape, pointerLine, pointerTip, infoContainerText) }
+	unselectCallback := func() { unselectCube(infoContainerShape, pointerLine, pointerTip, infoContainerText) }
+	g.cubeContainerObject.SetSelectCallback(selectCallback)
+	g.cubeContainerObject.SetUnselectCallback(unselectCallback)
 
-	startResizeListener(infoContainerShape, infoContainerText, cubeContainerObject)
+	startResizeListener(infoContainerShape, infoContainerText, g.cubeContainerObject, g.ctx)
 
 	windowMenu := fyne.NewMainMenu(
 		fyne.NewMenu(T("File"),
 			fyne.NewMenuItem(T("Create a new Cube"), func() {
 				setupDialog(
 					cubusWindow,
-					&cubeConfigs,
-					&cubeStrings,
-					cubusApp,
-					defaults,
-					cubeContainerObject,
-					infoContainerShape,
-					pointerLine,
-					pointerTip,
-					infoContainerText,
+					&g.cubeConfigs,
+					&g.cubeStrings,
+					g.app,
+					g.defaults,
+					g.cubeContainerObject,
 				)
 			}),
 			fyne.NewMenuItem(T("Export cube configs"), func() {
@@ -195,7 +230,7 @@ func Gui(cubusApp fyne.App, defaults *shared.Defaults) { // TODO: make this resp
 						log.Println(T("Error exporting config: "), err)
 						return
 					}
-					jsonData, err := json.Marshal(cubeConfigs)
+					jsonData, err := json.Marshal(g.cubeConfigs)
 					if err != nil {
 						log.Println(T("Error exporting config: "), err)
 						return
@@ -236,8 +271,8 @@ func Gui(cubusApp fyne.App, defaults *shared.Defaults) { // TODO: make this resp
 					for i, config := range importedConfigs {
 						cubeStrings[i] = shared.ObjectToJsonString(config)
 					}
-					cubusApp.Preferences().SetStringList("cubes", cubeStrings)
-					cubeContainerObject.ClearCubes()
+					g.app.Preferences().SetStringList("cubes", cubeStrings)
+					g.cubeContainerObject.ClearCubes()
 					for _, cubeConfig := range importedConfigs {
 						cubeConfigAsCorrectType := types.CubeConfig{
 							Id:        cubeConfig["id"].(string),
@@ -245,50 +280,60 @@ func Gui(cubusApp fyne.App, defaults *shared.Defaults) { // TODO: make this resp
 							CubeName:  cubeConfig["name"].(string),
 							PublicKey: nil,
 						}
-						cubeContainerObject.AddCube(defaults.CubeAssetURL, func(c *gui.Cube) { selectCube(c, infoContainerShape, pointerLine, pointerTip, infoContainerText) }, cubeConfig["id"].(string), cubeConfigAsCorrectType)
+						g.cubeContainerObject.AddCube(g.defaults.CubeAssetURL, cubeConfig["id"].(string), cubeConfigAsCorrectType)
 					}
-					cubeContainerObject.CenterCubes()
+					g.cubeContainerObject.CenterCubes()
 
 					err = reader.Close()
 					if err != nil {
+						log.Println(T("Error closing config file: "), err)
 						return
 					}
 				}, cubusWindow)
 				openDialog.Show()
 			}),
 			fyne.NewMenuItem(T("Settings"), func() {
-				settingsDialog(cubusApp)
+				settingsDialog(g.app)
 			}),
 		),
 	)
 	cubusWindow.SetMainMenu(windowMenu)
 
-	mainContainer := container.NewWithoutLayout(cubeContainerObject.Container, pointerLine, pointerTip, infoContainerShape, infoContainerText)
+	mainContainer := container.NewWithoutLayout(g.cubeContainerObject.Container, pointerLine, pointerTip, infoContainerShape, infoContainerText)
 	cubusWindow.SetContent(mainContainer)
 
-	go func() {
+	go func(ctx context.Context) {
 		for {
-			infoContainerShape.Refresh()
-			pointerLine.Refresh()
-			pointerTip.Refresh()
-			cubeContainerObject.Mu.Lock()
-			selected := cubeContainerObject.Selected
-			cubeContainerObject.Mu.Unlock()
-			if selected != nil {
-				pointerTip.Move(fyne.NewPos(selected.Position().X+selected.CubeSize/2-5, selected.Position().Y+selected.CubeSize/2-40))
-				pointerLine.Move(fyne.NewPos(selected.Position().X+selected.CubeSize/2, selected.Position().Y+selected.CubeSize/2-35))
-				time.AfterFunc(time.Second/4, func() {
-					cubeContainerObject.Mu.Lock()
-					selected := cubeContainerObject.Selected
-					cubeContainerObject.Mu.Unlock()
-					if selected == nil {
-						return
-					}
-					pointerLine.Resize(fyne.NewSize(WindowWidth()-selected.Position().X-WindowWidth()*0.3-25, 2))
-				})
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				infoContainerShape.Refresh()
+				pointerLine.Refresh()
+				pointerTip.Refresh()
+				g.cubeContainerObject.Mu.Lock()
+				selected := g.cubeContainerObject.Selected
+				g.cubeContainerObject.Mu.Unlock()
+				if selected != nil {
+					pointerTip.Move(fyne.NewPos(selected.Position().X+selected.CubeSize/2-5, selected.Position().Y+selected.CubeSize/2-40))
+					pointerLine.Move(fyne.NewPos(selected.Position().X+selected.CubeSize/2, selected.Position().Y+selected.CubeSize/2-35))
+					time.AfterFunc(time.Second/4, func() {
+						g.cubeContainerObject.Mu.Lock()
+						selected := g.cubeContainerObject.Selected
+						g.cubeContainerObject.Mu.Unlock()
+						if selected == nil {
+							return
+						}
+						pointerLine.Resize(fyne.NewSize(WindowWidth()-selected.Position().X-WindowWidth()*0.3-25, 2))
+					})
+				}
 			}
 		}
-	}()
+	}(g.ctx)
+}
 
+func (g *Gui) Run() {
+	g.SetupGui()
+	g.CreateGui()
 	cubusWindow.ShowAndRun()
 }

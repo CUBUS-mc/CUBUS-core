@@ -19,6 +19,7 @@ type CubeContainer struct {
 	Y                float32
 	NCubes           int
 	Selected         *Cube
+	SelectCallback   func(c *Cube)
 	UnselectCallback func()
 	IsoDistance      float32
 	Mu               sync.Mutex
@@ -34,14 +35,24 @@ type Cube struct {
 	Config         types.CubeConfig
 }
 
-func NewCubeContainer(unselectCallback func(), x float32, y float32, window fyne.Window) *CubeContainer {
+func NewCubeContainer(x float32, y float32, window fyne.Window) *CubeContainer {
 	return &CubeContainer{
-		Container:        container.NewWithoutLayout(),
-		UnselectCallback: unselectCallback,
-		X:                x,
-		Y:                y,
-		IsoDistance:      float32(70),
-		window:           window,
+		Container:   container.NewWithoutLayout(),
+		X:           x,
+		Y:           y,
+		IsoDistance: float32(70),
+		window:      window,
+	}
+}
+
+func (cc *CubeContainer) SetUnselectCallback(unselectCallback func()) {
+	cc.UnselectCallback = unselectCallback
+}
+
+func (cc *CubeContainer) SetSelectCallback(selectCallback func(c *Cube)) {
+	cc.SelectCallback = selectCallback
+	if cc.Selected != nil {
+		cc.SelectCallback(cc.Selected)
 	}
 }
 
@@ -57,8 +68,8 @@ func (cc *CubeContainer) ChangeSelected(c *Cube, selectCallback func(c *Cube)) {
 	}
 }
 
-func (cc *CubeContainer) AddCube(textureUrl string, selectCallback func(c *Cube), id string, cubeConfig types.CubeConfig) {
-	c := newCube(textureUrl, func(c *Cube) { cc.ChangeSelected(c, selectCallback) }, id, 0, 0, cubeConfig)
+func (cc *CubeContainer) AddCube(textureUrl string, id string, cubeConfig types.CubeConfig) {
+	c := newCube(textureUrl, func(c *Cube) { cc.ChangeSelected(c, cc.SelectCallback) }, id, 0, 0, cubeConfig)
 	cc.Container.Add(c)
 	cc.NCubes++
 	cc.CenterCubes()

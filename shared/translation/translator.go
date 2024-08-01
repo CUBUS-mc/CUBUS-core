@@ -6,12 +6,16 @@ import (
 	"golang.org/x/text/language"
 	"path/filepath"
 	"runtime"
+	"sync"
 )
 
-var bundle *i18n.Bundle
-var localizer *i18n.Localizer
+var (
+	bundle                  *i18n.Bundle
+	localizer               *i18n.Localizer
+	mu                      sync.Mutex
+	languageChangeListeners []func()
+)
 
-// TODO: update components using T() when language is changed
 func init() {
 	bundle = i18n.NewBundle(language.English)
 	bundle.RegisterUnmarshalFunc("toml", toml.Unmarshal)
@@ -42,10 +46,24 @@ func T(key string) string {
 	})
 }
 
+func notifyLanguageChange() {
+	mu.Lock()
+	defer mu.Unlock()
+	for _, listener := range languageChangeListeners {
+		listener()
+	}
+}
+
 func ChangeLanguage(lang string) {
-	println("Changing language to", lang)
 	if lang == "owo-UwU" {
 		lang = "ky-KG"
 	}
 	localizer = i18n.NewLocalizer(bundle, lang)
+	notifyLanguageChange()
+}
+
+func AddLanguageChangeListener(listener func()) {
+	mu.Lock()
+	defer mu.Unlock()
+	languageChangeListeners = append(languageChangeListeners, listener)
 }

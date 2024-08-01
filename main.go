@@ -25,7 +25,7 @@ func main() {
 	case shared.CLI:
 		println(T("CLI not implemented yet")) // Implement CLI with https://charm.sh/
 	case shared.GUI:
-		gui.Gui(cubusApp, defaultValues)
+		gui.NewGui(cubusApp, defaultValues).Run()
 	case shared.API:
 		println(T("API not implemented yet"))
 	}
