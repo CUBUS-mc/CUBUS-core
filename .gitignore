@@ -32,3 +32,5 @@ database
 api
 website
 discord-bot
+
+.venv

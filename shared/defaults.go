@@ -1,17 +1,19 @@
-package main
+package shared
 
 type UiType string
 
 const (
-	CLI UiType = "cli"
-	GUI UiType = "gui"
-	API UiType = "api"
+	CLI  UiType = "cli"
+	GUI  UiType = "gui"
+	API  UiType = "api"
+	NONE UiType = "none"
 )
 
 type Defaults struct {
 	UI           UiType
 	IconURL      string
 	CubeAssetURL string
+	Language     string
 }
 
 func NewDefaults() *Defaults {
@@ -19,5 +21,6 @@ func NewDefaults() *Defaults {
 		UI:           GUI,
 		IconURL:      "https://raw.githubusercontent.com/CUBUS-mc/CUBUS-core/master/assets/android.png",
 		CubeAssetURL: "https://raw.githubusercontent.com/CUBUS-mc/CUBUS-core/master/assets/cube.svg",
+		Language:     "en-US",
 	}
 }
