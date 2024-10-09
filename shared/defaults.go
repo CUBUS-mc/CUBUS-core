@@ -3,7 +3,7 @@ package shared
 type UiType string
 
 const (
-	CLI  UiType = "cli"
+	TUI  UiType = "tui"
 	GUI  UiType = "gui"
 	API  UiType = "api"
 	NONE UiType = "none"

@@ -1,20 +1,30 @@
 package server
 
 import (
-	"bytes"
+	"CUBUS-core/shared/types"
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	_ "github.com/mattn/go-sqlite3"
 	"io"
 	"net/http"
 )
 
 type Server struct {
 	port string
+	db   *sql.DB
 }
 
 func NewServer(port string) *Server {
+	db, err := initDB()
+	if err != nil {
+		fmt.Println("Failed to initialize database: ", err)
+		return nil
+	}
+
 	return &Server{
 		port: port,
+		db:   db,
 	}
 }
 
@@ -30,28 +40,64 @@ func (s *Server) createHandler(w http.ResponseWriter, r *http.Request) {
 		defer func(Body io.ReadCloser) {
 			err := Body.Close()
 			if err != nil {
-
+				fmt.Println("Failed to close request body: ", err)
 			}
 		}(r.Body)
 
-		var prettyJSON bytes.Buffer
-		err = json.Indent(&prettyJSON, body, "", "  ")
+		var cubeConfig types.CubeConfig
+		err = json.Unmarshal(body, &cubeConfig)
 		if err != nil {
-			http.Error(w, "Failed to format JSON", http.StatusInternalServerError)
+			http.Error(w, "Failed to parse JSON", http.StatusBadRequest)
 			return
 		}
 
-		fmt.Println("Request body: \n", prettyJSON.String())
-		w.WriteHeader(http.StatusOK)
-		_, err = w.Write([]byte("Request received"))
+		err = saveCube(s.db, cubeConfig)
 		if err != nil {
+			http.Error(w, "Failed to save cube", http.StatusInternalServerError)
 			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_, err = w.Write([]byte("Request received and cube saved"))
+		if err != nil {
+			fmt.Println("Failed to write response: ", err)
 		}
 	} else {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		_, err := w.Write([]byte("Only POST method is allowed"))
 		if err != nil {
+			fmt.Println("Failed to write response: ", err)
+		}
+	}
+}
+
+func (s *Server) getAllCubesHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		fmt.Println("Received request on /cubes endpoint")
+
+		cubes, err := getAllCubes(s.db)
+		if err != nil {
+			http.Error(w, "Failed to get cubes", http.StatusInternalServerError)
 			return
+		}
+
+		response, err := json.Marshal(cubes)
+		if err != nil {
+			http.Error(w, "Failed to parse JSON", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, err = w.Write(response)
+		if err != nil {
+			fmt.Println("Failed to write response: ", err)
+		}
+	} else {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		_, err := w.Write([]byte("Only GET method is allowed"))
+		if err != nil {
+			fmt.Println("Failed to write response: ", err)
 		}
 	}
 }
@@ -59,6 +105,7 @@ func (s *Server) createHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) Start() {
 	go func() {
 		http.HandleFunc("/create", s.createHandler)
+		http.HandleFunc("/cubes", s.getAllCubesHandler)
 		err := http.ListenAndServe(s.port, nil)
 		if err != nil {
 			fmt.Println("Failed to start server: ", err)

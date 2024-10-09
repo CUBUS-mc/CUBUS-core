@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"CUBUS-core/orchestrator/client"
 	"CUBUS-core/shared"
 	"CUBUS-core/shared/translation"
 	"CUBUS-core/shared/types"
@@ -137,9 +138,9 @@ type Gui struct {
 	ctx                 context.Context
 	cancel              context.CancelFunc
 	mu                  sync.Mutex
-	cubeConfigs         []map[string]interface{}
-	cubeStrings         []string
+	cubeConfigs         []types.CubeConfig
 	cubeContainerObject *gui.CubeContainer
+	remoteAddresses     []string
 }
 
 func NewGui(app fyne.App, defaults *shared.Defaults) *Gui {
@@ -158,11 +159,19 @@ func (g *Gui) RecreateComponents() {
 }
 
 func (g *Gui) SetupGui() {
-	g.cubeStrings = g.app.Preferences().StringListWithFallback("cubes", []string{})
-	g.app.Preferences().SetStringList("cubes", g.cubeStrings)
-	g.cubeConfigs = make([]map[string]interface{}, len(g.cubeStrings))
-	for i, cubeString := range g.cubeStrings {
-		g.cubeConfigs[i] = shared.JsonStringToObject(cubeString)
+	g.remoteAddresses = g.app.Preferences().StringListWithFallback("remoteAddresses", []string{"http://localhost:25560"})
+	g.app.Preferences().SetStringList("remoteAddresses", g.remoteAddresses)
+
+	orchestratorClient := client.NewClient()
+	g.cubeConfigs = make([]types.CubeConfig, 0)
+	for _, remoteAddress := range g.remoteAddresses {
+		cubes, err := orchestratorClient.GetAllCubes(remoteAddress)
+		if err != nil {
+			log.Println("Error fetching cubes:", err)
+			continue
+		}
+		g.cubeConfigs = append(g.cubeConfigs, cubes...)
+
 	}
 
 	cubusWindow = g.app.NewWindow("CUBUS core")
@@ -174,13 +183,7 @@ func (g *Gui) SetupGui() {
 
 	g.cubeContainerObject = gui.NewCubeContainer(WindowWidth()*0.5, WindowHeight()*0.5, cubusWindow)
 	for _, cubeConfig := range g.cubeConfigs {
-		cubeConfigAsCorrectType := types.CubeConfig{
-			Id:        cubeConfig["id"].(string),
-			CubeType:  types.CubeType{Value: cubeConfig["type"].(string)},
-			CubeName:  cubeConfig["name"].(string),
-			PublicKey: nil,
-		}
-		g.cubeContainerObject.AddCube(g.defaults.CubeAssetURL, cubeConfig["id"].(string), cubeConfigAsCorrectType)
+		g.cubeContainerObject.AddCube(g.defaults.CubeAssetURL, cubeConfig.Id, cubeConfig)
 	}
 	g.cubeContainerObject.CenterCubes()
 }
@@ -209,14 +212,12 @@ func (g *Gui) CreateGui() {
 
 	startResizeListener(infoContainerShape, infoContainerText, g.cubeContainerObject, g.ctx)
 
-	windowMenu := fyne.NewMainMenu(
+	windowMenu := fyne.NewMainMenu( // TODO: add section to manage remote addresses
 		fyne.NewMenu(T("File"),
 			fyne.NewMenuItem(T("Create a new Cube"), func() {
 				setupDialog(
 					cubusWindow,
 					&g.cubeConfigs,
-					&g.cubeStrings,
-					g.app,
 					g.defaults,
 					g.cubeContainerObject,
 				)

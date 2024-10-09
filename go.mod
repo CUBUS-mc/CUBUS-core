@@ -1,6 +1,8 @@
 module CUBUS-core
 
-go 1.20
+go 1.21
+
+toolchain go1.23.0
 
 require (
 	fyne.io/fyne/v2 v2.5.0
@@ -8,8 +10,8 @@ require (
 	github.com/CUBUS-mc/CUBUS-queen v0.0.0-20240801193115-5a9ca783c125
 	github.com/google/uuid v1.6.0
 	github.com/kbinani/screenshot v0.0.0-20230812210009-b87d31814237
+	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/nicksnyder/go-i18n/v2 v2.4.0
-	golang.org/x/crypto v0.25.0
 	golang.org/x/sync v0.7.0
 	golang.org/x/text v0.16.0
 )

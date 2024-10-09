@@ -16,9 +16,7 @@ import (
 
 func setupDialog(
 	window fyne.Window,
-	cubeConfigs *[]map[string]interface{},
-	cubeStrings *[]string,
-	cubusApp fyne.App,
+	cubeConfigs *[]types.CubeConfig,
 	defaults *shared.Defaults,
 	cubeContainerObject *gui.CubeContainer,
 ) {
@@ -61,19 +59,7 @@ func setupDialog(
 			return
 		}
 
-		*cubeConfigs = append(
-			*cubeConfigs,
-			map[string]interface{}{
-				"id":   cubeConfig.Id,
-				"name": cubeConfig.CubeName,
-				"type": cubeConfig.CubeType.Value,
-			},
-		)
-		*cubeStrings = []string{}
-		for _, cubeConfig := range *cubeConfigs {
-			*cubeStrings = append(*cubeStrings, shared.ObjectToJsonString(cubeConfig))
-		}
-		cubusApp.Preferences().SetStringList("cubes", *cubeStrings)
+		*cubeConfigs = append(*cubeConfigs, cubeConfig)
 		cubeContainerObject.AddCube(defaults.CubeAssetURL, cubeConfig.Id, cubeConfig)
 		cubeContainerObject.CenterCubes()
 	}
