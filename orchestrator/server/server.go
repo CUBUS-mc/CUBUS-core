@@ -13,6 +13,7 @@ import (
 type Server struct {
 	port string
 	db   *sql.DB
+	cm   *CubeManager
 }
 
 func NewServer(port string) *Server {
@@ -22,10 +23,15 @@ func NewServer(port string) *Server {
 		return nil
 	}
 
-	return &Server{
+	server := Server{
 		port: port,
 		db:   db,
+		cm:   NewCubeManager(db),
 	}
+
+	go server.startCubes()
+
+	return &server
 }
 
 func (s *Server) createHandler(w http.ResponseWriter, r *http.Request) {
@@ -56,6 +62,8 @@ func (s *Server) createHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to save cube", http.StatusInternalServerError)
 			return
 		}
+
+		go s.cm.StartCube(&cubeConfig)
 
 		w.WriteHeader(http.StatusOK)
 		_, err = w.Write([]byte("Request received and cube saved"))
@@ -113,4 +121,16 @@ func (s *Server) Start() {
 			fmt.Println("Server started on port", s.port)
 		}
 	}()
+}
+
+func (s *Server) startCubes() {
+	cubes, err := getAllCubes(s.db)
+	if err != nil {
+		fmt.Println("Failed to get cubes: ", err)
+		return
+	}
+
+	for _, cube := range cubes {
+		go s.cm.StartCube(&cube)
+	}
 }

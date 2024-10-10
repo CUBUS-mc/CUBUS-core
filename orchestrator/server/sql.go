@@ -2,6 +2,7 @@ package server
 
 import (
 	"CUBUS-core/shared/types"
+	"crypto"
 	"database/sql"
 	"log"
 )
@@ -79,4 +80,25 @@ func getAllCubes(db *sql.DB) ([]types.CubeConfig, error) {
 	}
 
 	return cubes, nil
+}
+
+func updatePublicKey(db *sql.DB, id string, publicKey crypto.PublicKey) error {
+	updateSQL := `UPDATE cubes SET public_key = ? WHERE id = ?`
+	statement, err := db.Prepare(updateSQL)
+	if err != nil {
+		return err
+	}
+	defer func(statement *sql.Stmt) {
+		err := statement.Close()
+		if err != nil {
+			log.Println("Failed to close statement of the sql db: ", err)
+		}
+	}(statement)
+
+	_, err = statement.Exec(publicKey, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
