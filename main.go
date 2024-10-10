@@ -30,8 +30,6 @@ func main() {
 		println(T("TUI not implemented yet")) // Implement TUI with https://charm.sh/
 	case shared.GUI:
 		gui.NewGui(cubusApp, defaultValues).Run()
-	case shared.API:
-		println(T("API not implemented yet"))
 	case shared.NONE: // Do nothing
 	}
 }

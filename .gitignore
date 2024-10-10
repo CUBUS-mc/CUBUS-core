@@ -25,12 +25,4 @@ go.work
 .idea/*
 config.json
 
-queen
-security
-drone
-database
-api
-website
-discord-bot
-
 .venv

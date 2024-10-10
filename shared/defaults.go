@@ -5,7 +5,6 @@ type UiType string
 const (
 	TUI  UiType = "tui"
 	GUI  UiType = "gui"
-	API  UiType = "api"
 	NONE UiType = "none"
 )
 
