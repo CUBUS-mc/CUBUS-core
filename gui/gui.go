@@ -7,15 +7,12 @@ import (
 	"CUBUS-core/shared/types"
 	"CUBUS-core/shared/types/gui"
 	"context"
-	"encoding/json"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"image/color"
-	"io"
 	"log"
 	"sync"
 	"time"
@@ -158,10 +155,9 @@ func (g *Gui) RecreateComponents() {
 	defer g.mu.Unlock()
 }
 
-func (g *Gui) SetupGui() {
+func (g *Gui) getCubeConfigs() {
 	g.remoteAddresses = g.app.Preferences().StringListWithFallback("remoteAddresses", []string{"http://localhost:25560"})
 	g.app.Preferences().SetStringList("remoteAddresses", g.remoteAddresses)
-
 	orchestratorClient := client.NewClient()
 	g.cubeConfigs = make([]types.CubeConfig, 0)
 	for _, remoteAddress := range g.remoteAddresses {
@@ -171,8 +167,21 @@ func (g *Gui) SetupGui() {
 			continue
 		}
 		g.cubeConfigs = append(g.cubeConfigs, cubes...)
-
 	}
+}
+
+func (g *Gui) addServerUrlIfNotExists(serverUrl string) {
+	for _, remoteAddress := range g.remoteAddresses {
+		if remoteAddress == serverUrl {
+			return
+		}
+	}
+	g.remoteAddresses = append(g.remoteAddresses, serverUrl)
+	g.app.Preferences().SetStringList("remoteAddresses", g.remoteAddresses)
+}
+
+func (g *Gui) SetupGui() {
+	g.getCubeConfigs()
 
 	cubusWindow = g.app.NewWindow("CUBUS core")
 	cubusWindow.Resize(WindowSize())
@@ -220,79 +229,83 @@ func (g *Gui) CreateGui() {
 					&g.cubeConfigs,
 					g.defaults,
 					g.cubeContainerObject,
+					g.addServerUrlIfNotExists,
 				)
 			}),
-			fyne.NewMenuItem(T("Export cube configs"), func() {
-				saveDialog := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
-					if writer == nil {
-						return
-					}
-					if err != nil {
-						log.Println(T("Error exporting config: "), err)
-						return
-					}
-					jsonData, err := json.Marshal(g.cubeConfigs)
-					if err != nil {
-						log.Println(T("Error exporting config: "), err)
-						return
-					}
-					_, err = writer.Write(jsonData)
-					if err != nil {
-						log.Println(T("Error writing config file: "), err)
-					}
-					err = writer.Close()
-					if err != nil {
-						return
-					}
-				}, cubusWindow)
-				saveDialog.SetFileName("config.json")
-				saveDialog.Show()
-			}),
-			fyne.NewMenuItem(T("Import cube configs"), func() {
-				openDialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
-					if reader == nil {
-						return
-					}
-					if err != nil {
-						log.Println(T("Error importing config: "), err)
-						return
-					}
-					jsonData, err := io.ReadAll(reader)
-					if err != nil {
-						log.Println(T("Error reading config file: "), err)
-						return
-					}
-					var importedConfigs []map[string]interface{}
-					err = json.Unmarshal(jsonData, &importedConfigs)
-					if err != nil {
-						log.Println(T("Error parsing config file: "), err)
-						return
-					}
-					cubeStrings := make([]string, len(importedConfigs))
-					for i, config := range importedConfigs {
-						cubeStrings[i] = shared.ObjectToJsonString(config)
-					}
-					g.app.Preferences().SetStringList("cubes", cubeStrings)
-					g.cubeContainerObject.ClearCubes()
-					for _, cubeConfig := range importedConfigs {
-						cubeConfigAsCorrectType := types.CubeConfig{
-							Id:        cubeConfig["id"].(string),
-							CubeType:  types.CubeType{Value: cubeConfig["type"].(string)},
-							CubeName:  cubeConfig["name"].(string),
-							PublicKey: nil,
-						}
-						g.cubeContainerObject.AddCube(g.defaults.CubeAssetURL, cubeConfig["id"].(string), cubeConfigAsCorrectType)
-					}
-					g.cubeContainerObject.CenterCubes()
+			/*
+					fyne.NewMenuItem(T("Export cube configs"), func() { // TODO: save server address of each cube in the config when exporting
+						saveDialog := dialog.NewFileSave(func(writer fyne.URIWriteCloser, err error) {
+							if writer == nil {
+								return
+							}
+							if err != nil {
+								log.Println(T("Error exporting config: "), err)
+								return
+							}
+							jsonData, err := json.Marshal(g.cubeConfigs)
+							if err != nil {
+								log.Println(T("Error exporting config: "), err)
+								return
+							}
+							_, err = writer.Write(jsonData)
+							if err != nil {
+								log.Println(T("Error writing config file: "), err)
+							}
+							err = writer.Close()
+							if err != nil {
+								return
+							}
+						}, cubusWindow)
+						saveDialog.SetFileName("config.json")
+						saveDialog.Show()
+					}),
+					fyne.NewMenuItem(T("Import cube configs"), func() { // TODO: fix this.
+				Let the user decide on what server which cube should be created
+						openDialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
+							if reader == nil {
+								return
+							}
+							if err != nil {
+								log.Println(T("Error importing config: "), err)
+								return
+							}
+							jsonData, err := io.ReadAll(reader)
+							if err != nil {
+								log.Println(T("Error reading config file: "), err)
+								return
+							}
+							var importedConfigs []map[string]interface{}
+							err = json.Unmarshal(jsonData, &importedConfigs)
+							if err != nil {
+								log.Println(T("Error parsing config file: "), err)
+								return
+							}
+							cubeStrings := make([]string, len(importedConfigs))
+							for i, config := range importedConfigs {
+								cubeStrings[i] = shared.ObjectToJsonString(config)
+							}
+							g.app.Preferences().SetStringList("cubes", cubeStrings)
+							g.cubeContainerObject.ClearCubes()
+							for _, cubeConfig := range importedConfigs {
+								cubeConfigAsCorrectType := types.CubeConfig{
+									Id:        cubeConfig["id"].(string),
+									CubeType:  types.CubeType{Value: cubeConfig["type"].(string)},
+									CubeName:  cubeConfig["name"].(string),
+									PublicKey: nil,
+								}
+								g.cubeContainerObject.AddCube(g.defaults.CubeAssetURL, cubeConfig["id"].(string), cubeConfigAsCorrectType)
+							}
+							g.cubeContainerObject.CenterCubes()
 
-					err = reader.Close()
-					if err != nil {
-						log.Println(T("Error closing config file: "), err)
-						return
-					}
-				}, cubusWindow)
-				openDialog.Show()
-			}),
+							err = reader.Close()
+							if err != nil {
+								log.Println(T("Error closing config file: "), err)
+								return
+							}
+						}, cubusWindow)
+						openDialog.Show()
+					}),
+			*/
 			fyne.NewMenuItem(T("Settings"), func() {
 				settingsDialog(g.app)
 			}),

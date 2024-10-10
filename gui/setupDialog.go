@@ -19,6 +19,7 @@ func setupDialog(
 	cubeConfigs *[]types.CubeConfig,
 	defaults *shared.Defaults,
 	cubeContainerObject *gui.CubeContainer,
+	addServerUrlIfNotExists func(serverUrl string),
 ) {
 	T := translation.T
 
@@ -52,6 +53,7 @@ func setupDialog(
 			serverUrl = "http://localhost:25560"
 		} else {
 			serverUrl = values["remoteUrl"]
+			addServerUrlIfNotExists(serverUrl)
 		}
 		err := orchestratorClient.CreateNewCube(serverUrl, cubeConfig)
 		if err != nil {
