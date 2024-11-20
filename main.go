@@ -23,7 +23,7 @@ func main() {
 	translation.ChangeLanguage(language)
 
 	localOrchestratorServer := server.NewServer(":25560")
-	localOrchestratorServer.Start()
+	go localOrchestratorServer.Start()
 
 	switch ui {
 	case shared.TUI:

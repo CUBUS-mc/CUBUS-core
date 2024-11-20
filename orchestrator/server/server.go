@@ -1,19 +1,22 @@
 package server
 
 import (
-	"CUBUS-core/shared/types"
+	"CUBUS-core/orchestrator"
+	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
-	"io"
-	"net/http"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"net"
 )
 
 type Server struct {
-	port string
-	db   *sql.DB
-	cm   *CubeManager
+	orchestrator.UnimplementedOrchestratorServer
+	port        string
+	db          *sql.DB
+	cubeManager *CubeManager
 }
 
 func NewServer(port string) *Server {
@@ -24,103 +27,56 @@ func NewServer(port string) *Server {
 	}
 
 	server := Server{
-		port: port,
-		db:   db,
-		cm:   NewCubeManager(db),
+		port:        port,
+		db:          db,
+		cubeManager: NewCubeManager(db),
 	}
-
-	go server.startCubes()
 
 	return &server
 }
 
-func (s *Server) createHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
-		fmt.Println("Received request on /create endpoint")
-
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			http.Error(w, "Failed to read request body", http.StatusInternalServerError)
-			return
-		}
-		defer func(Body io.ReadCloser) {
-			err := Body.Close()
-			if err != nil {
-				fmt.Println("Failed to close request body: ", err)
-			}
-		}(r.Body)
-
-		var cubeConfig types.CubeConfig
-		err = json.Unmarshal(body, &cubeConfig)
-		if err != nil {
-			http.Error(w, "Failed to parse JSON", http.StatusBadRequest)
-			return
-		}
-
-		err = saveCube(s.db, cubeConfig)
-		if err != nil {
-			http.Error(w, "Failed to save cube", http.StatusInternalServerError)
-			return
-		}
-
-		go s.cm.StartCube(&cubeConfig)
-
-		w.WriteHeader(http.StatusOK)
-		_, err = w.Write([]byte("Request received and cube saved"))
-		if err != nil {
-			fmt.Println("Failed to write response: ", err)
-		}
-	} else {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		_, err := w.Write([]byte("Only POST method is allowed"))
-		if err != nil {
-			fmt.Println("Failed to write response: ", err)
-		}
+func (s *Server) CreateCube(_ context.Context, req *orchestrator.CreateCubeRequest) (*orchestrator.CreateCubeResponse, error) {
+	println("Received request to create cube: ", req.GetConfig().Id)
+	cubeConfig := req.GetConfig()
+	err := saveCube(s.db, cubeConfig)
+	if err != nil {
+		fmt.Println("Failed to save cube: ", err)
+		return nil, status.Error(codes.Internal, "Failed to save cube")
 	}
+
+	go s.cubeManager.StartCube(cubeConfig)
+
+	return &orchestrator.CreateCubeResponse{Id: cubeConfig.Id}, nil
 }
 
-func (s *Server) getAllCubesHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		fmt.Println("Received request on /cubes endpoint")
-
-		cubes, err := getAllCubes(s.db)
-		if err != nil {
-			http.Error(w, "Failed to get cubes", http.StatusInternalServerError)
-			return
-		}
-
-		response, err := json.Marshal(cubes)
-		if err != nil {
-			http.Error(w, "Failed to parse JSON", http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, err = w.Write(response)
-		if err != nil {
-			fmt.Println("Failed to write response: ", err)
-		}
-	} else {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		_, err := w.Write([]byte("Only GET method is allowed"))
-		if err != nil {
-			fmt.Println("Failed to write response: ", err)
-		}
+func (s *Server) GetAllCubes(_ context.Context, _ *orchestrator.GetAllCubesRequest) (*orchestrator.GetAllCubesResponse, error) {
+	println("Received request to get all cubes")
+	cubes, err := getAllCubes(s.db)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "Failed to get cubes")
 	}
+
+	return &orchestrator.GetAllCubesResponse{Cubes: cubes}, nil
+
 }
 
 func (s *Server) Start() {
 	go func() {
-		http.HandleFunc("/create", s.createHandler)
-		http.HandleFunc("/cubes", s.getAllCubesHandler)
-		err := http.ListenAndServe(s.port, nil)
+		lis, err := net.Listen("tcp", s.port)
 		if err != nil {
 			fmt.Println("Failed to start server: ", err)
-		} else {
-			fmt.Println("Server started on port", s.port)
+			return
+		}
+
+		grpcServer := grpc.NewServer()
+		orchestrator.RegisterOrchestratorServer(grpcServer, s)
+
+		fmt.Println("Server started on port", s.port)
+		if err := grpcServer.Serve(lis); err != nil {
+			fmt.Println("Failed to serve: ", err)
 		}
 	}()
+	go s.startCubes()
 }
 
 func (s *Server) startCubes() {
@@ -131,6 +87,7 @@ func (s *Server) startCubes() {
 	}
 
 	for _, cube := range cubes {
-		go s.cm.StartCube(&cube)
+		println("Starting cube: ", cube.Id)
+		go s.cubeManager.StartCube(cube)
 	}
 }

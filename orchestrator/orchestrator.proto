@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package orchestrator;
+
+option go_package = ".";
+
+message QueueServerConfig {
+  string url = 1;
+  string username = 2;
+  string password = 3;
+  int32 db = 4;
+}
+
+message CubeConfig {
+  string id = 1;
+  string name = 2;
+  string public_key = 3;
+  QueueServerConfig queue_server = 4;
+}
+
+message CreateCubeRequest {
+  CubeConfig config = 1;
+}
+
+message CreateCubeResponse {
+  string id = 1;
+}
+
+message GetAllCubesRequest {}
+
+message GetAllCubesResponse {
+  repeated CubeConfig cubes = 1;
+}
+
+message GetCubeRequest {
+  string id = 1;
+}
+
+message GetCubeResponse {
+  CubeConfig config = 1;
+}
+
+message DeleteCubeRequest {
+  string id = 1;
+}
+
+message DeleteCubeResponse {}
+
+message UpdateCubeRequest {
+  CubeConfig config = 1;
+}
+
+message UpdateCubeResponse {}
+
+service Orchestrator {
+  rpc CreateCube(CreateCubeRequest) returns (CreateCubeResponse);
+  rpc GetAllCubes(GetAllCubesRequest) returns (GetAllCubesResponse);
+  rpc GetCube(GetCubeRequest) returns (GetCubeResponse);
+  rpc DeleteCube(DeleteCubeRequest) returns (DeleteCubeResponse);
+  rpc UpdateCube(UpdateCubeRequest) returns (UpdateCubeResponse);
+}

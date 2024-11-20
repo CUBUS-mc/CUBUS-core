@@ -7,6 +7,8 @@ import (
 	"CUBUS-core/shared/translation"
 	"CUBUS-core/shared/types"
 	"CUBUS-core/shared/types/gui"
+	"context"
+	"crypto/rsa"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
@@ -24,10 +26,10 @@ func setupDialog(
 	T := translation.T
 
 	cubeConfig := types.CubeConfig{
-		Id:        uuid.New().String(),
-		CubeType:  types.CubeTypes.GenericWorker,
-		CubeName:  "",
-		PublicKey: nil,
+		Id:          uuid.New().String(),
+		CubeName:    "",
+		PublicKey:   rsa.PublicKey{},
+		QueueServer: types.QueueServerConfig{},
 	}
 
 	cubeSetupForm := forms.GetCubeSetupForm()
@@ -41,26 +43,34 @@ func setupDialog(
 			case "cubeName":
 				cubeConfig.CubeName = value
 				break
-			case "cubeType":
-				cubeConfig.CubeType = types.CubeType{Value: value}
-				break
 			}
 		}
 
-		orchestratorClient := client.NewClient()
 		var serverUrl string
 		if values["cubeLocation"] == "local" {
-			serverUrl = "http://localhost:25560"
+			serverUrl = "localhost:25560"
 		} else {
 			serverUrl = values["remoteUrl"]
 			addServerUrlIfNotExists(serverUrl)
 		}
-		err := orchestratorClient.CreateNewCube(serverUrl, cubeConfig)
+		orchestratorClient, err := client.NewClient(serverUrl)
 		if err != nil {
 			dialog.ShowError(err, window)
 			return
 		}
-
+		// TODO: THIS IS A TEMPORARY FIX
+		cubeConfig.QueueServer = types.QueueServerConfig{
+			Url:      "localhost:6379",
+			Username: "",
+			Password: "",
+			DB:       0,
+		}
+		_, err = orchestratorClient.CreateCube(context.Background(), cubeConfig)
+		if err != nil {
+			dialog.ShowError(err, window)
+			return
+		}
+		println("Created cube with id: ", cubeConfig.Id)
 		*cubeConfigs = append(*cubeConfigs, cubeConfig)
 		cubeContainerObject.AddCube(defaults.CubeAssetURL, cubeConfig.Id, cubeConfig)
 		cubeContainerObject.CenterCubes()

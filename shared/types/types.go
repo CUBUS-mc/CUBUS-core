@@ -2,7 +2,7 @@ package types
 
 import (
 	"context"
-	"crypto"
+	"crypto/rsa"
 	"encoding/json"
 	"github.com/hibiken/asynq"
 )
@@ -35,11 +35,19 @@ var CubeTypes = CubeTypesStruct{
 	GenericWorker: CubeType{Value: "generic-worker"},
 }
 
+type QueueServerConfig struct {
+	Url      string
+	Username string
+	Password string
+	DB       int
+}
+
 type CubeConfig struct {
-	Id        string
-	CubeType  CubeType
-	CubeName  string
-	PublicKey crypto.PublicKey
+	Id            string
+	CubeType      CubeType
+	CubeName      string
+	PublicKey     rsa.PublicKey
+	QueueServerId int
 }
 
 func (cc *CubeConfig) ToJson() ([]byte, error) {

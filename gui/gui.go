@@ -156,12 +156,17 @@ func (g *Gui) RecreateComponents() {
 }
 
 func (g *Gui) getCubeConfigs() {
-	g.remoteAddresses = g.app.Preferences().StringListWithFallback("remoteAddresses", []string{"http://localhost:25560"})
+	g.remoteAddresses = g.app.Preferences().StringListWithFallback("remoteAddresses", []string{"localhost:25560"})
 	g.app.Preferences().SetStringList("remoteAddresses", g.remoteAddresses)
-	orchestratorClient := client.NewClient()
 	g.cubeConfigs = make([]types.CubeConfig, 0)
 	for _, remoteAddress := range g.remoteAddresses {
-		cubes, err := orchestratorClient.GetAllCubes(remoteAddress)
+		orchestratorClient, err := client.NewClient(remoteAddress)
+		if err != nil {
+			log.Println("Error creating client:", err)
+			continue
+		}
+		cubes, err := orchestratorClient.GetAllCubes(context.Background())
+		orchestratorClient.Close()
 		if err != nil {
 			log.Println("Error fetching cubes:", err)
 			continue
@@ -231,6 +236,9 @@ func (g *Gui) CreateGui() {
 					g.cubeContainerObject,
 					g.addServerUrlIfNotExists,
 				)
+			}),
+			fyne.NewMenuItem(T("Add queue server"), func() {
+
 			}),
 			/*
 					fyne.NewMenuItem(T("Export cube configs"), func() { // TODO: save server address of each cube in the config when exporting
